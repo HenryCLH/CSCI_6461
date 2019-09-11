@@ -2,8 +2,8 @@ package simulator;
 
 public class CPU
 {
-	private int R0, R1, R2, R3;	// General Purpose Register 16 bits
-	private int X1, X2, X3;		// Index Register 16 bits
+	private int[] Reg;	// General Purpose Register 16 bits
+	private int[] XReg;	// Index Register 16 bits
 
 	private int IR;	// Instruction Register 16 bits
 	private int PC;	// Program Counter 12 bits
@@ -23,7 +23,9 @@ public class CPU
 
 	CPU()
 	{
-		System.out.println("-------CPU start");
+		System.out.println("-------CPU start"); // print for debug
+		Reg = new int[] { 0, 0, 0, 0 };
+		XReg = new int[] { 0, 0, 0 };
 		run();
 	}
 
@@ -32,6 +34,12 @@ public class CPU
 	{
 		PC = pc;
 		System.out.println("PC:\t" + toBinaryString(PC, 12)); // print for debug
+	}
+
+	// set register
+	public void set_register(int reg, int num)
+	{
+		Reg[num] = reg;
 	}
 
 	// run
