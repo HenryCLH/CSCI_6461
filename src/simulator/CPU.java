@@ -102,4 +102,25 @@ public class CPU
 		}
 		return s;
 	}
+
+	// for UI to read data
+	public int[] read_data()
+	{
+		int[] re_data = new int[13];
+		for (int i = 0; i < 4; i++)
+		{
+			re_data[i] = Reg[i];
+		}
+		for (int i = 0; i < 3; i++)
+		{
+			re_data[4 + i] = XReg[i];
+		}
+		re_data[7] = IR;
+		re_data[8] = PC;
+		re_data[9] = CC;
+		re_data[10] = MAR;
+		re_data[11] = MBR;
+		re_data[12] = MFR;
+		return re_data;
+	}
 }
