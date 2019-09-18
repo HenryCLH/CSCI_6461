@@ -21,26 +21,25 @@ public class CPU
 	private int I;			// 1 bits
 	private int Address;	// 5 bits
 
-	CPU()
+	// Memory
+	private Memory mem;
+
+	CPU(Memory m)
 	{
-		System.out.println("-------CPU start"); // print for debug
+		System.out.println("--------CPU  Start--------");	// print for debug
+		mem = m;	// connect to the memory
 		Reg = new int[] { 0, 0, 0, 0 };
 		XReg = new int[] { 0, 0, 0 };
 		run();
 	}
 
-	// set value of PC
+	// set PC
 	public void set_PC(int pc)
-	{
-		PC = pc;
-		System.out.println("PC:\t" + toBinaryString(PC, 12)); // print for debug
-	}
+	{ PC = pc; }
 
 	// set register
 	public void set_register(int reg, int num)
-	{
-		Reg[num] = reg;
-	}
+	{ Reg[num] = reg; }
 
 	// run
 	public void run()
@@ -51,25 +50,80 @@ public class CPU
 	// single step run
 	public void step()
 	{
-		// TODO
-	}
-
-	// input instructions
-	public void instruction_in(int instruction)
-	{
-		IR = instruction;
-		System.out.println("IR:\t" + toBinaryString(IR, 16)); // print for debug
+		IR = mem.load(PC);
+		decoder();
 	}
 
 	// decode the instruction
 	public void decoder()
 	{
 		System.out.println("-------Decoder");
-		Opcode = (IR & 0b1111110000000000) >> 10;
-		R = (IR & 0b1100000000) >> 8;
-		IX = (IR & 0b11000000) >> 6;
-		I = (IR & 0b100000) >> 5;
-		Address = IR & 0b11111;
+
+		int tmpcode = (IR & 0b1100000000000000) >> 14;
+		switch (tmpcode)
+		{
+			case 0: // 6 bits Opcode
+			{
+				Opcode = (IR & 0b1111110000000000) >> 10;
+				R = (IR & 0b1100000000) >> 8;
+				IX = (IR & 0b11000000) >> 6;
+				I = (IR & 0b100000) >> 5;
+				Address = IR & 0b11111;
+				// calculate effective address
+				if (I == 0)
+				{
+					if (IX == 0)
+						MAR = Address;
+					else
+						MAR = Address + mem.load(XReg[IX]);
+				}
+				else
+				{
+					if (IX == 0)
+						MAR = mem.load(Address);
+					else
+						MAR = mem.load(Address + mem.load(XReg[IX]));
+				}
+				// decode Opcode
+				switch (Opcode)
+				{
+					case 1: // LDR R, IX, Address
+						Reg[R] = mem.load(MAR);
+						break;
+					case 2: // STR R, IX, Address
+						mem.store(MAR, Reg[R]);
+						break;
+					case 3: // LDA R, IX, Address
+						Reg[R] = MAR;
+						break;
+				}
+				break;
+			}
+			case 1: // 8 bits Opcode
+			{
+				Opcode = (IR & 0b1111111100000000) >> 8;
+				IX = (IR & 0b11000000) >> 6;
+				I = (IR & 0b100000) >> 5;
+				Address = IR & 0b11111;
+				// calculate effective address
+				if (I == 0)
+					MAR = Address;
+				else
+					MAR = mem.load(Address);
+				// decode Opcode
+				switch (Opcode)
+				{
+					case 0x41: // LDX IX, Address
+						XReg[IX] = mem.load(MAR);
+						break;
+					case 0x42: // STX IX, Address
+						mem.store(MAR, XReg[IX]);
+						break;
+				}
+				break;
+			}
+		}
+		PC++; // set PC to next instruction
 
 		// print for debug
 		System.out.println("Opcode:\t" + toBinaryString(Opcode, 6));
@@ -77,19 +131,16 @@ public class CPU
 		System.out.println("IX:\t" + toBinaryString(IX, 2));
 		System.out.println("I:\t" + toBinaryString(I, 1));
 		System.out.println("Addr:\t" + toBinaryString(Address, 5));
+		System.out.println("PC:\t" + toBinaryString(PC, 12));
 	}
 
 	// load
-	public void load()
-	{
-		// TODO
-	}
+	public int load(int address)
+	{ return mem.load(address); }
 
 	// store
-	public void store()
-	{
-		// TODO
-	}
+	public void store(int address, int value)
+	{ mem.store(address, value); }
 
 	// function to print registers in binary string
 	public String toBinaryString(int num, int bits)
