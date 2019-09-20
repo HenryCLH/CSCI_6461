@@ -60,6 +60,10 @@ public class CPU
 		decoder(); // decode and do the instruction, now is just load/store
 	}
 
+	// halt button function, just reset the PC and keep other values
+	public void halt()
+	{ PC = 0; }
+
 	// main part of the CPU, decode and do instructions
 	// decode the instruction
 	public void decoder()
@@ -73,11 +77,12 @@ public class CPU
 		Address = IR & 0b11111; // address
 
 		// calculate effective address (EA) and store in MAR
+		// separate the LDX/STX and others because they have different way to calculate EA
 		switch (Opcode)
 		{
-			case 1:
-			case 2:
-			case 3:
+			case 1: // LDR
+			case 2: // STR
+			case 3: // LDA
 			{
 				if (I == 0)
 				{
@@ -94,8 +99,8 @@ public class CPU
 						MAR = mem.load(Address + mem.load(XReg[IX]));
 				}
 			}
-			case 041:
-			case 042:
+			case 041: // LDX
+			case 042: // STX
 			{
 				if (I == 0)
 					MAR = Address;
