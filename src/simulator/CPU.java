@@ -73,19 +73,35 @@ public class CPU
 		Address = IR & 0b11111; // address
 
 		// calculate effective address (EA) and store in MAR
-		if (I == 0) // not indirect addressing
+		switch (Opcode)
 		{
-			if (IX == 0) // without index register
-				MAR = Address;
-			else // use index register
-				MAR = Address + mem.load(XReg[IX]);
-		}
-		else // indirect addressing
-		{
-			if (IX == 0) // without index register
-				MAR = mem.load(Address);
-			else // use index register
-				MAR = mem.load(Address + mem.load(XReg[IX]));
+			case 1:
+			case 2:
+			case 3:
+			{
+				if (I == 0)
+				{
+					if (IX == 0)
+						MAR = Address;
+					else
+						MAR = Address + mem.load(XReg[IX]);
+				}
+				else
+				{
+					if (IX == 0)
+						MAR = mem.load(Address);
+					else
+						MAR = mem.load(Address + mem.load(XReg[IX]));
+				}
+			}
+			case 041:
+			case 042:
+			{
+				if (I == 0)
+					MAR = Address;
+				else
+					MAR = mem.load(Address);
+			}
 		}
 
 		switch (Opcode)
@@ -100,10 +116,10 @@ public class CPU
 				Reg[R] = MAR; // load just the address into GPR
 				break;
 			case 041: // LDX IX, Address
-				XReg[IX] = mem.load(MAR); // load data from memory into XR
+				XReg[IX - 1] = mem.load(Address); // load data from memory into XR
 				break;
 			case 042: // STX IX, Address
-				mem.store(MAR, XReg[IX]); // store XR data into memory
+				mem.store(Address, XReg[IX - 1]); // store XR data into memory
 				break;
 		}
 
@@ -116,6 +132,8 @@ public class CPU
 		System.out.println("I:\t" + toBinaryString(I, 1));
 		System.out.println("Addr:\t" + toBinaryString(Address, 5));
 		System.out.println("PC:\t" + toBinaryString(PC, 12));
+		System.out.println("-----------");
+		System.out.println("Reg[0]: " + Reg[0] + " | XReg[1]: " + XReg[0]);
 	}
 
 	// just for debug, will not be in the final program
