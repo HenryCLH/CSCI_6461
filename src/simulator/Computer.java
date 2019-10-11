@@ -2,20 +2,20 @@ package simulator;
 
 import java.awt.Color;
 import java.awt.GridLayout;
+import java.awt.Label;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 
-import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.WindowConstants;
 import javax.swing.table.DefaultTableModel;
@@ -25,281 +25,329 @@ import javax.swing.text.PlainDocument;
 
 public class Computer
 {
-	public static void main(String[] args)
+	private CPU cpu;
+	private Memory memory;
+
+	private JFrame window;
+
+	private JTable registerTable;
+	private JScrollPane registerScrollPane;
+
+	private JTable memoryTable;
+	private JScrollPane memoryScrollPane;
+
+	private JPanel buttonPanel;
+	private JButton IPL;
+	private JButton runButton;
+	private JButton stepButton;
+	private JButton loadButton;
+	private JButton executeButton;
+
+	private JTextField inputTextField;
+
+	private JTextArea logTextArea;
+	private JScrollPane logScrollPane;
+
+	public static void main(String[] arge)
 	{
-		// main window frame
-		JFrame window = new JFrame("Computer");
+		/*
+		Runnable run = new Runnable() {
+			public void run()
+			{
+				Computer computer = new Computer();
+			}
+		};
+		new Thread(run).start();
+		*/
+
+		Computer computer = new Computer();
+	}
+
+	Computer()
+	{
+		memory = new Memory();
+		cpu = new CPU(memory);
+		initComponents();
+		initListener();
+		cpu.setTextArea(logTextArea);
+	}
+
+	public void initComponents()
+	{
+		window = new JFrame("Computer");
 		window.setLayout(null);
-		window.setSize(600, 700);
+		window.setSize(800, 650);
 		window.setLocationRelativeTo(null);
 		window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-		// registers choose button panel
-		JPanel regBtnPanel = new JPanel();
-		regBtnPanel.setLayout(new GridLayout(13, 1));
-		regBtnPanel.setBounds(20, 0, 80, 600);
-		// register choose buttons
-		JRadioButton btnR0 = new JRadioButton("R0");
-		JRadioButton btnR1 = new JRadioButton("R1");
-		JRadioButton btnR2 = new JRadioButton("R2");
-		JRadioButton btnR3 = new JRadioButton("R3");
-		JRadioButton btnXR1 = new JRadioButton("XR1");
-		JRadioButton btnXR2 = new JRadioButton("XR2");
-		JRadioButton btnXR3 = new JRadioButton("XR3");
-		JRadioButton btnIR = new JRadioButton("IR");
-		JRadioButton btnPC = new JRadioButton("PC");
-		JRadioButton btnCC = new JRadioButton("CC");
-		JRadioButton btnMAR = new JRadioButton("MAR");
-		JRadioButton btnMBR = new JRadioButton("MBR");
-		JRadioButton btnMFR = new JRadioButton("MFR");
-		// button group of the register buttons
-		ButtonGroup group = new ButtonGroup();
-		group.add(btnR0);
-		group.add(btnR1);
-		group.add(btnR2);
-		group.add(btnR3);
-		group.add(btnXR1);
-		group.add(btnXR2);
-		group.add(btnXR3);
-		group.add(btnIR);
-		group.add(btnPC);
-		group.add(btnCC);
-		group.add(btnMAR);
-		group.add(btnMBR);
-		group.add(btnMFR);
-		// add buttons into the panel
-		regBtnPanel.add(btnR0);
-		regBtnPanel.add(btnR1);
-		regBtnPanel.add(btnR2);
-		regBtnPanel.add(btnR3);
-		regBtnPanel.add(btnXR1);
-		regBtnPanel.add(btnXR2);
-		regBtnPanel.add(btnXR3);
-		regBtnPanel.add(btnIR);
-		regBtnPanel.add(btnPC);
-		regBtnPanel.add(btnCC);
-		regBtnPanel.add(btnMAR);
-		regBtnPanel.add(btnMBR);
-		regBtnPanel.add(btnMFR);
-
-		// registers value display panel
-		JPanel regLabelPanel = new JPanel();
-		regLabelPanel.setLayout(new GridLayout(13, 1));
-		regLabelPanel.setBounds(100, 0, 180, 600);
-		// register display labels
-		JLabel labelR0 = new JLabel("0000,0000,0000,0000");
-		JLabel labelR1 = new JLabel("0000,0000,0000,0000");
-		JLabel labelR2 = new JLabel("0000,0000,0000,0000");
-		JLabel labelR3 = new JLabel("0000,0000,0000,0000");
-		JLabel labelXR1 = new JLabel("0000,0000,0000,0000");
-		JLabel labelXR2 = new JLabel("0000,0000,0000,0000");
-		JLabel labelXR3 = new JLabel("0000,0000,0000,0000");
-		JLabel labelIR = new JLabel("0000,0000,0000,0000");
-		JLabel labelPC = new JLabel("0000,0000,0000,0000");
-		JLabel labelCC = new JLabel("0000,0000,0000,0000");
-		JLabel labelMAR = new JLabel("0000,0000,0000,0000");
-		JLabel labelMBR = new JLabel("0000,0000,0000,0000");
-		JLabel labelMFR = new JLabel("0000,0000,0000,0000");
-		// add labels into the panel
-		regLabelPanel.add(labelR0);
-		regLabelPanel.add(labelR1);
-		regLabelPanel.add(labelR2);
-		regLabelPanel.add(labelR3);
-		regLabelPanel.add(labelXR1);
-		regLabelPanel.add(labelXR2);
-		regLabelPanel.add(labelXR3);
-		regLabelPanel.add(labelIR);
-		regLabelPanel.add(labelPC);
-		regLabelPanel.add(labelCC);
-		regLabelPanel.add(labelMAR);
-		regLabelPanel.add(labelMBR);
-		regLabelPanel.add(labelMFR);
-
-		// memory data display table
-		String[][] tmpString = new String[4096][2];
-		for (int i = 0; i < 4096; i++)
 		{
-			tmpString[i][0] = Integer.toString(i);
-		}
-		String[] tmpIndex = new String[] { "Index", "Value" };
-		JTable memoryTable = new JTable(new DefaultTableModel(tmpString, tmpIndex))
-		{
-			@Override // set the table cannot be edited direct
-			public boolean isCellEditable(int row, int column)
-			{ return false; }
-		};
-		memoryTable.setGridColor(Color.BLACK);
-		memoryTable.setRowHeight(18);
-		memoryTable.getColumnModel().getColumn(0).setMaxWidth(50);
-		// put the table in a scroll pane
-		JScrollPane scrollPane = new JScrollPane(memoryTable);
-		scrollPane.setBounds(300, 0, 300, 600);
-
-		// input box
-		JTextField inputText = new JTextField();
-		inputText.setBounds(0, 600, 600, 35);
-		// limit the input to be binary string
-		inputText.setDocument(new PlainDocument()
-		{
-			@Override
-			public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException
+			// register
+			String[] columnName = { "Register", "Binary Value" };
+			String[][] data = { { "R0" }, { "R1" }, { "R2" }, { "R3" }, { "XR1" }, { "XR2" }, { "XR3" }, { "PC" }, { "IR" }, { "CC" }, { "MAR" }, { "MBR" }, { "MFR" } };
+			registerTable = new JTable(new DefaultTableModel(data, columnName)
 			{
-				if (str == null)
-					return;
-				String s = "";
-				for (int i = 0; i < str.length(); i++)
+				@Override
+				public boolean isCellEditable(int rowIndex, int columnIndex)
 				{
-					char ch = str.charAt(i);
-					if (ch == '0' || ch == '1')
-						s += ch;
+					if (columnIndex == 0)
+						return false;
+					else
+						return true;
 				}
-				if ((getLength() + s.length()) <= 16)
-					super.insertString(offset, s, attr);
+			});
+			registerTable.setGridColor(Color.BLACK);
+			registerTable.setRowHeight(30);
+			registerTable.getColumnModel().getColumn(0).setMaxWidth(50);
+
+			registerScrollPane = new JScrollPane(registerTable);
+			registerScrollPane.setBounds(2, 30, 220, 550);
+		}
+		{
+			// memory
+			String[] columnName = { "Index", "BinaryValue" };
+			String[][] data = new String[2048][2];
+			for (int i = 0; i < 2048; i++)
+			{
+				data[i][0] = Integer.toString(i);
 			}
-		});
+			memoryTable = new JTable(new DefaultTableModel(data, columnName)
+			{
+				@Override
+				public boolean isCellEditable(int rowIndex, int columnIndex)
+				{
+					if (columnIndex == 0)
+						return false;
+					else
+						return true;
+				}
+			});
+			memoryTable.setGridColor(Color.BLACK);
+			memoryTable.setRowHeight(20);
+			memoryTable.getColumnModel().getColumn(0).setMaxWidth(40);
 
-		// control buttons panel
-		JPanel ctrBtnPanel = new JPanel();
-		ctrBtnPanel.setLayout(new GridLayout(1, 5));
-		ctrBtnPanel.setBounds(0, 635, 600, 35);
-		// control buttons
-		JButton btnInput = new JButton("Input");
-		JButton btnRun = new JButton("Run");
-		JButton btnStep = new JButton("Step");
-		JButton btnHalt = new JButton("Halt");
-		JButton btnIPL = new JButton("IPL");
-		// add buttons into the panel
-		ctrBtnPanel.add(btnInput);
-		ctrBtnPanel.add(btnRun);
-		ctrBtnPanel.add(btnStep);
-		ctrBtnPanel.add(btnHalt);
-		ctrBtnPanel.add(btnIPL);
+			memoryScrollPane = new JScrollPane(memoryTable);
+			memoryScrollPane.setBounds(235, 30, 220, 550);
+		}
+		{
+			// button
+			buttonPanel = new JPanel();
+			buttonPanel.setLayout(new GridLayout(1, 5));
+			buttonPanel.setBounds(2, 590, 400, 30);
 
-		// add all the components into window
-		window.add(regBtnPanel);
-		window.add(regLabelPanel);
-		window.add(scrollPane);
-		window.add(inputText);
-		window.add(ctrBtnPanel);
+			IPL = new JButton("IPL");
+			runButton = new JButton("Run");
+			stepButton = new JButton("Step");
+			loadButton = new JButton("Load");
+			executeButton = new JButton("Execute");
+
+			buttonPanel.add(IPL);
+			buttonPanel.add(runButton);
+			buttonPanel.add(stepButton);
+			buttonPanel.add(loadButton);
+			buttonPanel.add(executeButton);
+
+			// input field
+			inputTextField = new JTextField();
+			inputTextField.setBounds(410, 590, 150, 30);
+			inputTextField.setDocument(new PlainDocument()
+			{
+				public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException
+				{
+					if (str != null && getLength() < 16)
+					{
+						String s = "";
+						for (int i = 0; i < str.length(); i++)
+						{
+							char ch = str.charAt(i);
+							if (ch == '0' || ch == '1')
+								s += ch;
+						}
+						if ((getLength() + s.length()) > 16)
+							s = s.substring(0, 16 - getLength());
+						super.insertString(offset, s, attr);
+					}
+				}
+			});
+		}
+		{
+			// log
+			logTextArea = new JTextArea();
+			logTextArea.setEditable(false);
+
+			logScrollPane = new JScrollPane(logTextArea);
+			logScrollPane.setBounds(465, 30, 333, 550);
+		}
+
+		Label registerLabel = new Label("Register");
+		registerLabel.setBounds(3, 0, 100, 30);
+		window.add(registerLabel);
+		window.add(registerScrollPane);
+
+		Label memoryLabel = new Label("Memory");
+		memoryLabel.setBounds(236, 0, 100, 30);
+		window.add(memoryLabel);
+		window.add(memoryScrollPane);
+
+		Label logLabel = new Label("Log");
+		logLabel.setBounds(466, 0, 100, 30);
+		window.add(logLabel);
+		window.add(logScrollPane);
+
+		window.add(buttonPanel);
+		window.add(inputTextField);
 
 		window.setVisible(true);
+	}
 
-		// memory and CPU objects
-		Memory memory = new Memory();
-		CPU cpu = new CPU(memory, regLabelPanel, memoryTable);
-
-		// listener and actions for choose registers
-		ActionListener regBtnListener = new ActionListener()
+	public void initListener()
+	{
+		registerTable.addKeyListener(new KeyAdapter()
 		{
-			@Override
-			public void actionPerformed(ActionEvent e)
+			public void keyReleased(KeyEvent e)
 			{
-				memoryTable.clearSelection();
-				switch (e.getActionCommand())
+				if (e.getKeyChar() == '\n')
 				{
-					case "R0":
-						cpu.setChoose(0);
-						break;
-					case "R1":
-						cpu.setChoose(1);
-						break;
-					case "R2":
-						cpu.setChoose(2);
-						break;
-					case "R3":
-						cpu.setChoose(3);
-						break;
-					case "XR1":
-						cpu.setChoose(11);
-						break;
-					case "XR2":
-						cpu.setChoose(12);
-						break;
-					case "XR3":
-						cpu.setChoose(13);
-						break;
-					case "PC":
-						cpu.setChoose(101);
-						break;
-					case "IR":
-						cpu.setChoose(102);
-						break;
-					case "CC":
-						cpu.setChoose(103);
-						break;
-					case "MAR":
-						cpu.setChoose(111);
-						break;
-					case "MBR":
-						cpu.setChoose(112);
-						break;
-					case "MFR":
-						cpu.setChoose(113);
-						break;
+					int row = registerTable.getSelectedRow();
+					int column = registerTable.getSelectedColumn();
+					String s = (String) registerTable.getValueAt(row, column);
+					String ss = "";
+					int count = 0;
+					for (int i = 0; i < s.length(); i++)
+					{
+						char ch = s.charAt(i);
+						if (ch != '0' && ch != '1' && ch != ',')
+							return;
+						else if (ch != ',')
+						{
+							ss += ch;
+							count++;
+							if (count > 16)
+								return;
+						}
+					}
+					cpu.setRegister(row, Integer.parseInt(ss, 2));
 				}
+				refresh();
 			}
-		};
-		btnR0.addActionListener(regBtnListener);
-		btnR1.addActionListener(regBtnListener);
-		btnR2.addActionListener(regBtnListener);
-		btnR3.addActionListener(regBtnListener);
-		btnXR1.addActionListener(regBtnListener);
-		btnXR2.addActionListener(regBtnListener);
-		btnXR3.addActionListener(regBtnListener);
-		btnIR.addActionListener(regBtnListener);
-		btnPC.addActionListener(regBtnListener);
-		btnCC.addActionListener(regBtnListener);
-		btnMAR.addActionListener(regBtnListener);
-		btnMBR.addActionListener(regBtnListener);
-		btnMFR.addActionListener(regBtnListener);
-
-		// listener for chose memory data
-		MouseListener memoryTableListener = new MouseAdapter()
+		});
+		registerTable.addMouseListener(new MouseAdapter()
 		{
 			@Override
 			public void mouseClicked(MouseEvent e)
-			{
-				group.clearSelection();
-				int row = memoryTable.getSelectedRow();
-				cpu.setChoose(1000);
-				cpu.setMemoryChoose(row);
-			}
-		};
-		memoryTable.addMouseListener(memoryTableListener);
+			{ memoryTable.clearSelection(); }
+		});
 
-		// buttons listener and actions
-		ActionListener ctrBtnListener = new ActionListener()
+		memoryTable.addKeyListener(new KeyAdapter()
+		{
+			public void keyReleased(KeyEvent e)
+			{
+				if (e.getKeyChar() == '\n')
+				{
+					int row = memoryTable.getSelectedRow();
+					int column = memoryTable.getSelectedColumn();
+					String s = (String) memoryTable.getValueAt(row, column);
+					String ss = "";
+					int count = 0;
+					for (int i = 0; i < s.length(); i++)
+					{
+						char ch = s.charAt(i);
+						if (ch != '0' && ch != '1' && ch != ',')
+							return;
+						else if (ch != ',')
+						{
+							ss += ch;
+							count++;
+							if (count > 16)
+								return;
+						}
+					}
+					memory.store(row, Integer.parseInt(ss, 2));
+				}
+				refresh();
+			}
+		});
+		memoryTable.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseClicked(MouseEvent e)
+			{ registerTable.clearSelection(); }
+		});
+
+		ActionListener buttonListener = new ActionListener()
 		{
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
 				switch (e.getActionCommand())
 				{
-					case "Input":
-						cpu.input(inputText.getText());
+					case "IPL":
+						memory.loadROM();
+						cpu.clear();
+						cpu.setRegister(7, 30);
 						break;
 					case "Run":
-						cpu.play();
+						cpu.run();
 						break;
 					case "Step":
-						cpu.step();
+						cpu.stepRun();
 						break;
-					case "Halt":
-						cpu.halt();
+					case "Load":
 						break;
-					case "IPL":
-						cpu.loadTest();
-						cpu.play();
+					case "Execute":
+						String s = inputTextField.getText();
+						inputTextField.setText("");
+						int tmp = Integer.parseInt(s, 2);
+						if (tmp >= 0 && tmp <= 65536)
+						{
+							cpu.setIR(tmp);
+							cpu.runInstruction();
+						}
 						break;
 				}
+				refresh();
 			}
 		};
-		btnInput.addActionListener(ctrBtnListener);
-		btnRun.addActionListener(ctrBtnListener);
-		btnStep.addActionListener(ctrBtnListener);
-		btnHalt.addActionListener(ctrBtnListener);
-		btnIPL.addActionListener(ctrBtnListener);
+		IPL.addActionListener(buttonListener);
+		runButton.addActionListener(buttonListener);
+		stepButton.addActionListener(buttonListener);
+		loadButton.addActionListener(buttonListener);
+		executeButton.addActionListener(buttonListener);
+	}
 
-		cpu.start();
+	public void refresh()
+	{
+		// register
+		for (int i = 0; i < registerTable.getRowCount(); i++)
+		{
+			int value = cpu.getRegister(i);
+			String s = Integer.toBinaryString(value);
+			s = "0000000000000000" + s;
+			s = s.substring(s.length() - 16, s.length());
+			String ss = "";
+			for (int j = 0; j < s.length(); j++)
+			{
+				ss += s.charAt(j);
+				if (j % 4 == 3 && j < 15)
+					ss += ",";
+			}
+			registerTable.setValueAt(ss, i, 1);
+		}
+
+		// memory
+		for (int i = 0; i < memoryTable.getRowCount(); i++)
+		{
+			int value = memory.load(i);
+			String s = Integer.toBinaryString(value);
+			s = "0000000000000000" + s;
+			s = s.substring(s.length() - 16, s.length());
+			String ss = "";
+			for (int j = 0; j < s.length(); j++)
+			{
+				ss += s.charAt(j);
+				if (j % 4 == 3 && j < 15)
+					ss += ",";
+			}
+			memoryTable.setValueAt(ss, i, 1);
+		}
 	}
 }
