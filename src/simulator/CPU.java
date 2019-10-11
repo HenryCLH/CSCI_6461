@@ -75,15 +75,18 @@ public class CPU extends Thread
 		{
 			case 0: // HLT
 				PC = 4;
+				printLog("HLT: PC -> 4");
 				break;
 
 			case 01: // LDR
 				Reg[reg] = load(EA);
 				PC++;
+				printLog("LDR: Reg[" + reg + "] -> " + Reg[reg]);
 				break;
 			case 02: // STR
 				store(EA, Reg[reg]);
 				PC++;
+				printLog("STR: Memory[" + EA + "] -> " + Reg[reg]);
 				break;
 			case 03: // LDA
 				Reg[reg] = EA;
@@ -315,10 +318,12 @@ public class CPU extends Thread
 			case 041: // LDX
 				XReg[xreg - 1] = load(EA);
 				PC++;
+				printLog("LDX: XReg[" + xreg + "] -> " + XReg[xreg - 1]);
 				break;
 			case 042: // STX
 				store(EA, XReg[xreg - 1]);
 				PC++;
+				printLog("STX: Memory[" + EA + "] -> " + XReg[xreg - 1]);
 				break;
 
 			case 061: // IN
@@ -349,13 +354,7 @@ public class CPU extends Thread
 			else
 			{
 				MBR = value;
-				int tmp = memory.storeCache(address, value);
-				if (tmp == -1)
-					printLog("Address Out of Memory Index!");
-				else if (tmp == 0)
-					printLog("Store Not Hit Cache");
-				else
-					printLog("Store Hit Cache");
+				memory.storeCache(address, value);
 			}
 		}
 	}
@@ -372,10 +371,7 @@ public class CPU extends Thread
 			MAR = address;
 			int tmp = memory.loadCache(address);
 			if (tmp == Integer.MAX_VALUE)
-			{
-				printLog("Address Out of Memory Index!");
 				return Integer.MAX_VALUE;
-			}
 			else
 			{
 				MBR = tmp;
@@ -479,10 +475,7 @@ public class CPU extends Thread
 	{ logTextArea = log; }
 
 	public void printLog(String s)
-	{
-		System.out.println(s);
-		logTextArea.append(s + "\n");
-	}
+	{ logTextArea.append(s + "\n"); }
 
 	public void clear()
 	{

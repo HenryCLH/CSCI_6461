@@ -40,7 +40,7 @@ public class Computer
 	private JButton IPL;
 	private JButton runButton;
 	private JButton stepButton;
-	private JButton loadButton;
+	private JButton loadButton1;
 	private JButton executeButton;
 
 	private JTextField inputTextField;
@@ -69,6 +69,7 @@ public class Computer
 		cpu = new CPU(memory);
 		initComponents();
 		initListener();
+		memory.setTextArea(logTextArea);
 		cpu.setTextArea(logTextArea);
 	}
 
@@ -137,13 +138,13 @@ public class Computer
 			IPL = new JButton("IPL");
 			runButton = new JButton("Run");
 			stepButton = new JButton("Step");
-			loadButton = new JButton("Load");
+			loadButton1 = new JButton("Load1");
 			executeButton = new JButton("Execute");
 
 			buttonPanel.add(IPL);
 			buttonPanel.add(runButton);
 			buttonPanel.add(stepButton);
-			buttonPanel.add(loadButton);
+			buttonPanel.add(loadButton1);
 			buttonPanel.add(executeButton);
 
 			// input field
@@ -291,7 +292,8 @@ public class Computer
 					case "Step":
 						cpu.stepRun();
 						break;
-					case "Load":
+					case "Load1":
+
 						break;
 					case "Execute":
 						String s = inputTextField.getText();
@@ -310,7 +312,7 @@ public class Computer
 		IPL.addActionListener(buttonListener);
 		runButton.addActionListener(buttonListener);
 		stepButton.addActionListener(buttonListener);
-		loadButton.addActionListener(buttonListener);
+		loadButton1.addActionListener(buttonListener);
 		executeButton.addActionListener(buttonListener);
 	}
 

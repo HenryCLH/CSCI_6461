@@ -2,8 +2,12 @@ package simulator;
 
 import java.util.LinkedList;
 
+import javax.swing.JTextArea;
+
 public class Memory
 {
+	private JTextArea logTextArea;
+
 	private int[] mem;		// 2048 words each is 16 bits
 	private int[] expMem;	// an expend 2048 words
 	private boolean expFlag;	// flag mark whether the memory has expanded
@@ -57,45 +61,57 @@ public class Memory
 		{
 			cacheLine = cache.get(i);
 			if (cacheLine.getAddress() == address)	// hit
+			{
+				printLog("Load Hit Cache");
 				return cacheLine.getValue();
+			}
 		}
 		// not hit, create a new cache line and add it into cache
 		int re = load(address);
 		if (re == Integer.MAX_VALUE)
+		{
+			printLog("Load Failed! Invalid Address");
 			return re;
+		}
 		else
 		{
 			cacheLine = new CacheLine(address, re);
 			if (cache.size() == 16)
 				cache.removeLast();
 			cache.addFirst(cacheLine);
+			printLog("Load Not Hit Cache");
 			return cacheLine.getValue();
 		}
 	}
 
 	// store data into cache, also into memory synchronously
-	public int storeCache(int address, int value)
+	public void storeCache(int address, int value)
 	{
 		// store into memory
 		int re = store(address, value);
 		if (re == -1)
-			return -1;
-
-		CacheLine cacheLine;
-		// check if the cache has the address
-		for (int i = 0; i < cache.size(); i++)
 		{
-			cacheLine = cache.get(i);
-			if (cacheLine.getAddress() == address) // hit
-			{
-				cacheLine.setValue(value);
-				return 1;
-			}
+			printLog("Store Failed! Invalid Address");
 		}
-		// not hit, create a new cache line and add it into cache
-		cacheLine = new CacheLine(address, value);
-		cache.addFirst(cacheLine);
-		return 0;
+		else
+		{
+			CacheLine cacheLine;
+			// check if the cache has the address
+			for (int i = 0; i < cache.size(); i++)
+			{
+				cacheLine = cache.get(i);
+				if (cacheLine.getAddress() == address) // hit
+				{
+					cacheLine.setValue(value);
+					printLog("Store Hit Cache");
+					return;
+				}
+			}
+			// not hit, create a new cache line and add it into cache
+			cacheLine = new CacheLine(address, value);
+			cache.addFirst(cacheLine);
+			printLog("Store Not Hit Cache");
+		}
 	}
 
 	public void loadROM()
@@ -125,6 +141,12 @@ public class Memory
 		store(44, 0b0000111001001100); // LDA R2, X1, 12
 		store(45, 0b0000111101101100); // LDA R3, X1, 12[,I]
 	}
+
+	public void printLog(String s)
+	{ logTextArea.append(s + "\n"); }
+
+	public void setTextArea(JTextArea log)
+	{ logTextArea = log; }
 
 	public void clear()
 	{
