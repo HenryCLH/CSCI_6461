@@ -6,7 +6,7 @@ import javax.swing.JTextArea;
 
 public class Memory
 {
-	private JTextArea logTextArea;
+	private JTextArea logTextArea;	// reference of log console on UI
 
 	private int[] mem;		// 2048 words each is 16 bits
 	private int[] expMem;	// an expend 2048 words
@@ -14,9 +14,10 @@ public class Memory
 
 	private LinkedList<CacheLine> cache;	// cache list
 
+	// constructor
 	Memory()
 	{
-		// use int to simulate the memory to store word
+		// use integer to simulate the memory to store word
 		mem = new int[2048];
 		expMem = new int[2048];
 		expFlag = false;
@@ -55,18 +56,7 @@ public class Memory
 	// load data from cache
 	public int loadCache(int address)
 	{
-		CacheLine cacheLine;
-		// check if the cache has the address
-		for (int i = 0; i < cache.size(); i++)
-		{
-			cacheLine = cache.get(i);
-			if (cacheLine.getAddress() == address)	// hit
-			{
-				printLog("Load Hit Cache");
-				return cacheLine.getValue();
-			}
-		}
-		// not hit, create a new cache line and add it into cache
+		// load from memory
 		int re = load(address);
 		if (re == Integer.MAX_VALUE)
 		{
@@ -75,11 +65,23 @@ public class Memory
 		}
 		else
 		{
+			CacheLine cacheLine;
+			// check if the cache has the address
+			for (int i = 0; i < cache.size(); i++)
+			{
+				cacheLine = cache.get(i);
+				if (cacheLine.getAddress() == address)	// hit
+				{
+					printLog("Cache: Load Hit");
+					return cacheLine.getValue();
+				}
+			}
+			// not hit, create a new cache line and add it into cache
 			cacheLine = new CacheLine(address, re);
 			if (cache.size() == 16)
 				cache.removeLast();
 			cache.addFirst(cacheLine);
-			printLog("Load Not Hit Cache");
+			printLog("Cache: Load Miss");
 			return cacheLine.getValue();
 		}
 	}
@@ -103,17 +105,45 @@ public class Memory
 				if (cacheLine.getAddress() == address) // hit
 				{
 					cacheLine.setValue(value);
-					printLog("Store Hit Cache");
+					printLog("Cache: Store Hit");
 					return;
 				}
 			}
 			// not hit, create a new cache line and add it into cache
 			cacheLine = new CacheLine(address, value);
+			if (cache.size() == 16)
+				cache.removeLast();
 			cache.addFirst(cacheLine);
-			printLog("Store Not Hit Cache");
+			printLog("Cache: Store Miss");
 		}
 	}
 
+	// print log of memory
+	public void printLog(String s)
+	{ logTextArea.append(s + "\n"); }
+
+	// set the log console reference
+	public void setTextArea(JTextArea log)
+	{ logTextArea = log; }
+
+	// clear the memory, reset all value to 0
+	public void clear()
+	{
+		mem = new int[2048];
+		expMem = new int[2048];
+		expFlag = false;
+
+		cache = new LinkedList<CacheLine>();
+	}
+
+	// load the memory value of Program 1 when push load1 button
+	public void load1()
+	{
+		clear();
+		// TODO
+	}
+
+	// load the memory value of a test program when push the IPL button
 	public void loadROM()
 	{
 		clear();
@@ -140,20 +170,5 @@ public class Memory
 		store(43, 0b0000110100101100); // LDA R1, 12[,I]
 		store(44, 0b0000111001001100); // LDA R2, X1, 12
 		store(45, 0b0000111101101100); // LDA R3, X1, 12[,I]
-	}
-
-	public void printLog(String s)
-	{ logTextArea.append(s + "\n"); }
-
-	public void setTextArea(JTextArea log)
-	{ logTextArea = log; }
-
-	public void clear()
-	{
-		mem = new int[2048];
-		expMem = new int[2048];
-		expFlag = false;
-
-		cache = new LinkedList<CacheLine>();
 	}
 }
