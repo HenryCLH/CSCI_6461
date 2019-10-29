@@ -1,12 +1,17 @@
 package simulator;
 
+import java.awt.Color;
 import java.util.LinkedList;
 
-import javax.swing.JTextArea;
+import javax.swing.JTextPane;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
 
 public class Memory
 {
-	private JTextArea logTextArea;	// reference of log console on UI
+	private JTextPane logTextPane;	// reference of log console on UI
 
 	private int[] mem;		// 2048 words each is 16 bits
 	private int[] expMem;	// an expend 2048 words
@@ -72,7 +77,7 @@ public class Memory
 				cacheLine = cache.get(i);
 				if (cacheLine.getAddress() == address)	// hit
 				{
-					printLog("Cache: Load Hit");
+					//printLog("Cache: Load Hit");
 					return cacheLine.getValue();
 				}
 			}
@@ -81,7 +86,7 @@ public class Memory
 			if (cache.size() == 16)
 				cache.removeLast();
 			cache.addFirst(cacheLine);
-			printLog("Cache: Load Miss");
+			//printLog("Cache: Load Miss");
 			return cacheLine.getValue();
 		}
 	}
@@ -105,7 +110,7 @@ public class Memory
 				if (cacheLine.getAddress() == address) // hit
 				{
 					cacheLine.setValue(value);
-					printLog("Cache: Store Hit");
+					//printLog("Cache: Store Hit");
 					return;
 				}
 			}
@@ -114,17 +119,33 @@ public class Memory
 			if (cache.size() == 16)
 				cache.removeLast();
 			cache.addFirst(cacheLine);
-			printLog("Cache: Store Miss");
+			//printLog("Cache: Store Miss");
 		}
 	}
 
 	// print log of memory
 	public void printLog(String s)
-	{ logTextArea.append(s + "\n"); }
+	{
+		Document doc = logTextPane.getDocument();
+		s = "\n" + s;
+		SimpleAttributeSet attrSet = null;
+		if (s.contains("Invalid"))
+		{
+			attrSet = new SimpleAttributeSet();
+			StyleConstants.setForeground(attrSet, Color.RED);
+		}
+		try
+		{
+			doc.insertString(doc.getLength(), s, attrSet);
+		} catch (BadLocationException e)
+		{
+			System.out.println("BadLocationException: " + e);
+		}
+	}
 
 	// set the log console reference
-	public void setTextArea(JTextArea log)
-	{ logTextArea = log; }
+	public void setTextPane(JTextPane log)
+	{ logTextPane = log; }
 
 	// clear the memory, reset all value to 0
 	public void clear()
@@ -140,7 +161,51 @@ public class Memory
 	public void load1()
 	{
 		clear();
-		// TODO
+		//data
+		store(29, 50);
+		store(30, 60);
+		store(53, Short.MAX_VALUE);
+		store(54, 20);
+		// instruction
+		store(61, 0b1000010010011101);
+		store(62, 0b1000010011011110);
+		store(63, 0b0000011110000100);
+		store(64, 0b0001101000000001);
+		store(65, 0b0000101000011110);
+		store(66, 0b1000010001011110);
+		store(67, 0b1100010000000000);
+		store(68, 0b0000100001011110);
+		store(69, 0b0011101110001110);
+		store(70, 0b0001111000010101);
+		store(71, 0b0001101100000001);
+		store(72, 0b0000101100011110);
+		store(73, 0b1000010001011110);
+		store(74, 0b1100010000000000);
+		store(75, 0b0000100010000001);
+		store(76, 0b0000010010000001);
+		store(77, 0b0001010001011110);
+		store(78, 0b0011110011010110);
+		store(79, 0b0100000010000000);
+		store(80, 0b0000100100011110);
+		store(81, 0b0000010000011110);
+		store(82, 0b0000100000011110);
+		store(83, 0b0001010010000011);
+		store(84, 0b0011110011011100);
+		store(85, 0b0000010000011110);
+		store(86, 0b0000100010000011);
+		store(87, 0b0000101110000010);
+		store(88, 0b0000010010000100);
+		store(89, 0b0001101100000001);
+		store(90, 0b0000101100011110);
+		store(91, 0b1000010001011110);
+		store(92, 0b0000101100011110);
+		store(93, 0b0001010000011110);
+		store(94, 0b0011110011010000);
+		store(95, 0b0000010010000010);
+		store(96, 0b0000100000011110);
+		store(97, 0b1000010001011110);
+		store(98, 0b0000010001011110);
+		store(99, 0b1100100000000001);
 	}
 
 	// load the memory value of a test program when push the IPL button

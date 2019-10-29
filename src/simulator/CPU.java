@@ -1,11 +1,17 @@
 package simulator;
 
-import javax.swing.JTextArea;
+import java.awt.Color;
+
+import javax.swing.JTextPane;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
 
 public class CPU extends Thread
 {
 	private Memory memory;	// reference of memory
-	private JTextArea logTextArea;	// reference of log console
+	private JTextPane logTextPane;	// reference of log console
 	// Registers in CPU
 	private int[] Reg;	// General Purpose Register (GPR) 16 bits
 	private int[] XReg;	// Index Register (XR) 16 bits
@@ -369,7 +375,10 @@ public class CPU extends Thread
 					inputFlag = 0;
 				}
 				else
+				{
 					inputFlag = -1;
+					printLog("Waiting for input");
+				}
 				break;
 			case 062: // OUT
 				if (devID == 1)
@@ -428,14 +437,6 @@ public class CPU extends Thread
 				return MBR;
 			}
 		}
-	}
-
-	// set when get a input from keyboard panel
-	public void setKeyboardInput(int key)
-	{
-		keyboardInput = key;
-		inputFlag = 1;
-		run();
 	}
 
 	// for out side to set registers value
@@ -521,13 +522,42 @@ public class CPU extends Thread
 		return Integer.MAX_VALUE;
 	}
 
+	// set when get a input from keyboard panel
+	public void setKeyboardInput(int key)
+	{
+		if (key >= 0 && key <= 65536)
+		{
+			keyboardInput = key;
+			inputFlag = 1;
+			run();
+		}
+		else
+			printLog("Invalid Input Value! Please Input Another Value");
+	}
+
 	// print log of CPU
 	public void printLog(String s)
-	{ logTextArea.append(s + "\n"); }
+	{
+		Document doc = logTextPane.getDocument();
+		s = "\n" + s;
+		SimpleAttributeSet attrSet = null;
+		if (s.contains("Invalid"))
+		{
+			attrSet = new SimpleAttributeSet();
+			StyleConstants.setForeground(attrSet, Color.RED);
+		}
+		try
+		{
+			doc.insertString(doc.getLength(), s, attrSet);
+		} catch (BadLocationException e)
+		{
+			System.out.println("BadLocationException: " + e);
+		}
+	}
 
 	// set the log console reference
-	public void setTextArea(JTextArea log)
-	{ logTextArea = log; }
+	public void setTextPane(JTextPane log)
+	{ logTextPane = log; }
 
 	// clear the CPU, reset all value to 0
 	public void clear()

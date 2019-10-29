@@ -15,12 +15,13 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.WindowConstants;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
 import javax.swing.text.PlainDocument;
 
 public class Computer
@@ -45,7 +46,7 @@ public class Computer
 
 	private JTextField inputTextField;
 
-	private JTextArea logTextArea;
+	private JTextPane logTextPane;
 	private JScrollPane logScrollPane;
 
 	private JButton keyboardButton;
@@ -62,8 +63,8 @@ public class Computer
 		cpu = new CPU(memory); // create CPU
 		initComponents(); // initiate all components on console
 		initListener(); // initiate all listeners for components
-		memory.setTextArea(logTextArea); // link memory and log console
-		cpu.setTextArea(logTextArea); // link CPU and log console
+		memory.setTextPane(logTextPane); // link memory and log console
+		cpu.setTextPane(logTextPane); // link CPU and log console
 	}
 
 	// initiate components
@@ -162,10 +163,11 @@ public class Computer
 			}
 		});
 		// log console
-		logTextArea = new JTextArea();
-		logTextArea.setEditable(false);
+		logTextPane = new JTextPane();
+		logTextPane.setEditable(false);
+		logTextPane.setText("-------Start-------");
 
-		logScrollPane = new JScrollPane(logTextArea);
+		logScrollPane = new JScrollPane(logTextPane);
 		logScrollPane.setBounds(465, 30, 333, 550);
 
 		// keyboard button
@@ -174,8 +176,25 @@ public class Computer
 		// keyboard input field
 		keyboardTextField = new JTextField();
 		keyboardTextField.setBounds(640, 590, 150, 30);
+		keyboardTextField.setDocument(new PlainDocument()
+		{
+			public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException
+			{
+				if (str != null)
+				{
+					String s = "";
+					for (int i = 0; i < str.length(); i++)
+					{
+						char ch = str.charAt(i);
+						if (ch >= '0' && ch <= '9')
+							s += ch;
+					}
+					super.insertString(offset, s, attr);
+				}
+			}
+		});
 
-		// add all comonents into main frame
+		// add all components into main frame
 		Label registerLabel = new Label("Register");
 		registerLabel.setBounds(3, 0, 100, 30);
 		window.add(registerLabel);
@@ -273,7 +292,7 @@ public class Computer
 							index = "MFR";
 							break;
 					}
-					logTextArea.append("Change " + index + " -> " + ss + "\n");
+					printLog("Change " + index + " -> " + ss + "\n");
 				}
 				refresh();
 			}
@@ -312,7 +331,7 @@ public class Computer
 						}
 					}
 					memory.store(row, Integer.parseInt(ss, 2));
-					logTextArea.append("Change Memory[" + row + "] -> " + ss + "\n");
+					printLog("Change Memory[" + row + "] -> " + ss + "\n");
 				}
 				refresh();
 			}
@@ -346,7 +365,8 @@ public class Computer
 					case "Load1":
 						memory.load1();
 						cpu.clear();
-						cpu.setRegister(7, 0); // TODO
+						cpu.setRegister(7, 61);
+						cpu.run();
 						break;
 					case "Execute":
 						String s = inputTextField.getText();
@@ -411,6 +431,19 @@ public class Computer
 					ss += ",";
 			}
 			memoryTable.setValueAt(ss, i, 1);
+		}
+	}
+
+	// print log
+	public void printLog(String s)
+	{
+		Document doc = logTextPane.getDocument();
+		try
+		{
+			doc.insertString(doc.getLength(), s, null);
+		} catch (BadLocationException e)
+		{
+			System.out.println("BadLocationException: " + e);
 		}
 	}
 }
