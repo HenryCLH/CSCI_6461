@@ -141,6 +141,7 @@ public class Memory
 		{
 			System.out.println("BadLocationException: " + e);
 		}
+		logTextPane.setCaretPosition(doc.getLength());
 	}
 
 	// set the log console reference

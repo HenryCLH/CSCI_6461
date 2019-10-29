@@ -15,6 +15,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.WindowConstants;
@@ -48,6 +49,10 @@ public class Computer
 
 	private JTextPane logTextPane;
 	private JScrollPane logScrollPane;
+
+	private JTextArea cardReaderTextArea;
+	private JScrollPane cardReaderScrollPane;
+	private JButton cardReaderButton;
 
 	private JButton keyboardButton;
 	private JTextField keyboardTextField;
@@ -96,7 +101,7 @@ public class Computer
 		registerTable.getColumnModel().getColumn(0).setMaxWidth(50);
 
 		registerScrollPane = new JScrollPane(registerTable);
-		registerScrollPane.setBounds(2, 30, 220, 550);
+		registerScrollPane.setBounds(2, 30, 220, 410);
 
 		// memory
 		String[] memoryColumnName = { "Index", "BinaryValue" };
@@ -170,6 +175,32 @@ public class Computer
 		logScrollPane = new JScrollPane(logTextPane);
 		logScrollPane.setBounds(465, 30, 333, 550);
 
+		// card reader
+		cardReaderTextArea = new JTextArea();
+		cardReaderTextArea.setDocument(new PlainDocument()
+		{
+			public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException
+			{
+				if (str != null)
+				{
+					String s = "";
+					for (int i = 0; i < str.length(); i++)
+					{
+						char ch = str.charAt(i);
+						if (ch == '0' || ch == '1' || ch == '\n')
+							s += ch;
+					}
+					super.insertString(offset, s, attr);
+				}
+			}
+		});
+
+		cardReaderScrollPane = new JScrollPane(cardReaderTextArea);
+		cardReaderScrollPane.setBounds(2, 470, 220, 110);
+		// card reader input button
+		cardReaderButton = new JButton("Read");
+		cardReaderButton.setBounds(112, 440, 90, 30);
+
 		// keyboard button
 		keyboardButton = new JButton("Keyboard");
 		keyboardButton.setBounds(550, 590, 90, 30);
@@ -212,6 +243,12 @@ public class Computer
 
 		window.add(buttonPanel);
 		window.add(inputTextField);
+
+		Label cardReaderLabel = new Label("Card Reader");
+		cardReaderLabel.setBounds(2, 440, 110, 30);
+		window.add(cardReaderLabel);
+		window.add(cardReaderButton);
+		window.add(cardReaderScrollPane);
 
 		window.add(keyboardButton);
 		window.add(keyboardTextField);
@@ -369,6 +406,7 @@ public class Computer
 						cpu.run();
 						break;
 					case "Execute":
+					{
 						String s = inputTextField.getText();
 						inputTextField.setText("");
 						if (s != null && s.length() > 0)
@@ -381,9 +419,17 @@ public class Computer
 							}
 						}
 						break;
+					}
 					case "Keyboard":
 						cpu.setKeyboardInput(Integer.parseInt(keyboardTextField.getText()));
 						break;
+					case "Read":
+					{
+						String s = cardReaderTextArea.getText();
+						String[] ss = s.split("\n");
+						cpu.setCardReaderInput(ss);
+						break;
+					}
 				}
 				refresh();
 			}
@@ -394,6 +440,7 @@ public class Computer
 		loadButton1.addActionListener(buttonListener);
 		executeButton.addActionListener(buttonListener);
 		keyboardButton.addActionListener(buttonListener);
+		cardReaderButton.addActionListener(buttonListener);
 	}
 
 	// refresh the display value
@@ -445,5 +492,6 @@ public class Computer
 		{
 			System.out.println("BadLocationException: " + e);
 		}
+		logTextPane.setCaretPosition(doc.getLength());
 	}
 }

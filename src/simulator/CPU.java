@@ -377,14 +377,24 @@ public class CPU extends Thread
 				else
 				{
 					inputFlag = -1;
-					printLog("Waiting for input");
+					String s = "";
+					switch (devID)
+					{
+						case 0:
+							s += " from keyboard";
+							break;
+						case 2:
+							s += " from card reader";
+							break;
+					}
+					printLog("Waiting for input" + s);
 				}
 				break;
 			case 062: // OUT
+				printLog("OUT");
 				if (devID == 1)
 					printLog("Printer Output: " + Reg[reg]);
 				PC++;
-				printLog("OUT");
 				break;
 			default:
 				PC = 4;
@@ -535,6 +545,18 @@ public class CPU extends Thread
 			printLog("Invalid Input Value! Please Input Another Value");
 	}
 
+	// set when get input from card reader
+	public void setCardReaderInput(String[] ss)
+	{
+		for (int i = 0; i < ss.length; i++)
+		{
+			String s = ss[i];
+			int tmp = Integer.valueOf(s, 2);
+			IR = tmp;
+			runInstruction();
+		}
+	}
+
 	// print log of CPU
 	public void printLog(String s)
 	{
@@ -546,6 +568,11 @@ public class CPU extends Thread
 			attrSet = new SimpleAttributeSet();
 			StyleConstants.setForeground(attrSet, Color.RED);
 		}
+		else if (s.contains("Printer Output"))
+		{
+			attrSet = new SimpleAttributeSet();
+			StyleConstants.setForeground(attrSet, Color.BLUE);
+		}
 		try
 		{
 			doc.insertString(doc.getLength(), s, attrSet);
@@ -553,6 +580,7 @@ public class CPU extends Thread
 		{
 			System.out.println("BadLocationException: " + e);
 		}
+		logTextPane.setCaretPosition(doc.getLength());
 	}
 
 	// set the log console reference
