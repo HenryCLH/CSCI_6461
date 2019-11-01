@@ -11,28 +11,27 @@ import javax.swing.text.StyleConstants;
 public class CPU extends Thread
 {
 	private Memory memory;	// reference of memory
-	private JTextPane logTextPane;	// reference of log console
+	private JTextPane textPane;	// reference of log console in UI
 	// Registers in CPU
-	private int[] Reg;	// General Purpose Register (GPR) 16 bits
-	private int[] XReg;	// Index Register (XR) 16 bits
-	private int PC;	// Program Counter 12 bits
-	private int IR;	// Instruction Register 16 bits
-	private int CC;	// Condition Code 4 bits
-	// 0-OVERFLOW  1-UNFERFLOW  2-DIVZERO  3-EQUALORNOT
-	private int MAR;	// Memory Address Register 16 bits
-	private int MBR;	// Memory Buffer Register 16 bits
-	private int MFR;	// Machine Fault Register 4 bits
+	private char[] Reg;	// General Purpose Register (GPR) 16 bits
+	private char[] XReg;	// Index Register (XR) 16 bits
+	private char PC;		// Program Counter 12 bits
+	private char IR;		// Instruction Register 16 bits
+	private char CC;		// Condition Code 4 bits
+	private char MAR;	// Memory Address Register 16 bits
+	private char MBR;	// Memory Buffer Register 16 bits
+	private char MFR;	// Machine Fault Register 4 bits
 
-	private int keyboardInput;	// number from the UI input console
-	private int inputFlag;	// mark whether the CPU is waiting for user to input a number
+	private char keyboardInput;	// number from the UI input console
+	private int inputFlag;	// mark if the CPU is waiting for user to input a number
 
 	// constructor
 	CPU(Memory mem)
 	{
 		memory = mem;
 		// initiate registers with 0
-		Reg = new int[] { 0, 0, 0, 0 };
-		XReg = new int[] { 0, 0, 0 };
+		Reg = new char[] { 0, 0, 0, 0 };
+		XReg = new char[] { 0, 0, 0 };
 		PC = IR = CC = 0;
 		MAR = MBR = MFR = 0;
 		// initiate input flag, 0 means not waiting, 1 means has an input, -1 means waiting
@@ -54,7 +53,7 @@ public class CPU extends Thread
 	// run step by step
 	public void stepRun()
 	{
-		IR = load(PC);
+		IR = (char) load(PC);
 		runInstruction();
 	}
 
@@ -62,14 +61,16 @@ public class CPU extends Thread
 	public void runInstruction()
 	{
 		//decode the instruction
-		int opcode = IR >> 10;
-		int reg, xreg, I, Addr, EA, A_L, L_R, devID;
+		int opcode, reg, xreg, I, Addr, EA, A_L, L_R, Immed, code, devID;
+		opcode = IR >> 10;
 		reg = (IR & 0x0300) >> 8;
 		xreg = (IR & 0x00C0) >> 6;
 		A_L = xreg & 0b10;
 		L_R = xreg & 0b01;
 		I = (IR & 0x0020) >> 5;
 		Addr = IR & 0x001F;
+		Immed = Addr;
+		code = Addr;
 		devID = Addr;
 
 		// calculate the EA (effective address)
@@ -78,350 +79,448 @@ public class CPU extends Thread
 		else
 			EA = 0;
 		EA += Addr;
-		if (EA > 65536)
-		{
-			CC = 0b1000;
-			printLog("EA OVERFLOW");
-			EA = EA & 0x0000FFFF;
-		}
 		if (I == 1)
-			EA += load(EA);
-
+		{
+			if (load(EA) == Integer.MIN_VALUE)
+				return;
+			else
+				EA = MBR;
+		}
 		// switch to each instruction
 		switch (opcode)
 		{
 			case 0: // HLT
+			{
 				PC = 4;
-				printLog("HLT: PC -> 4");
+				printLog("HLT: PC = 4");
 				break;
-
+			}
 			case 01: // LDR
-				Reg[reg] = load(EA);
-				PC++;
-				printLog("LDR: Reg[" + reg + "] -> " + Reg[reg]);
+			{
+				if (load(EA) == Integer.MIN_VALUE)
+					return;
+				else
+				{
+					Reg[reg] = MBR;
+					PC++;
+					printLog("LDR: Reg[" + reg + "] = " + (int) Reg[reg]);
+				}
 				break;
+			}
 			case 02: // STR
-				store(EA, Reg[reg]);
-				PC++;
-				printLog("STR: Memory[" + EA + "] -> " + Reg[reg]);
+			{
+				if (store(EA, Reg[reg]) == Integer.MIN_VALUE)
+					return;
+				else
+				{
+					PC++;
+					printLog("STR: Memory[" + EA + "] = " + (int) Reg[reg]);
+				}
 				break;
+			}
 			case 03: // LDA
-				Reg[reg] = EA;
+			{
+				Reg[reg] = (char) EA;
 				PC++;
-				printLog("LDA: Reg[" + reg + "] -> " + EA);
+				printLog("LDA: Reg[" + reg + "] = " + (int) EA);
 				break;
-
+			}
 			case 04: // AMR
-				Reg[reg] += load(EA);
-				if (Reg[reg] > Short.MAX_VALUE)
-				{
-					CC = 0b1000;
-					printLog("Result OVERFLOW");
-					Reg[reg] = Reg[reg] & 0x0000FFFF;
-				}
-				else if (Reg[reg] < Short.MIN_VALUE)
-				{
-					CC = 0b0100;
-					printLog("Result UNDERFLOW");
-					Reg[reg] = Reg[reg] & 0x0000FFFF;
-				}
+			{
+				if (load(EA) == Integer.MIN_VALUE)
+					return;
 				else
-					CC = 0b0000;
-				PC++;
-				printLog("AMR: Reg[" + reg + "] -> " + Reg[reg]);
-				break;
+				{
+					short r = (short) Reg[reg];
+					short m = (short) MBR;
+					int tmp = r + m;
+					String s = "";
+					if (tmp > Short.MAX_VALUE)
+					{
+						CC = 0b1000;
+						s += " Result OVERFLOW";
+					}
+					else if (tmp < Short.MIN_VALUE)
+					{
+						CC = 0b0100;
+						s += " Result UNDERFLOW";
+					}
+					else
+						CC = 0b0000;
+					Reg[reg] += MBR;
+					PC++;
+					printLog("AMR: Reg[" + reg + "] = " + (int) Reg[reg] + s);
+					break;
+				}
+			}
 			case 05: // SMR
-				Reg[reg] -= load(EA);
-				if (Reg[reg] > Short.MAX_VALUE)
-				{
-					CC = 0b1000;
-					printLog("Result OVERFLOW");
-					Reg[reg] = Reg[reg] & 0x0000FFFF;
-				}
-				else if (Reg[reg] < Short.MIN_VALUE)
-				{
-					CC = 0b0100;
-					printLog("Result UNDERFLOW");
-					Reg[reg] = Reg[reg] & 0x0000FFFF;
-				}
+			{
+				if (load(EA) == Integer.MIN_VALUE)
+					return;
 				else
-					CC = 0b0000;
-				PC++;
-				printLog("SMR: Reg[" + reg + "] -> " + Reg[reg]);
-				break;
+				{
+					short r = (short) Reg[reg];
+					short m = (short) MBR;
+					int tmp = r - m;
+					String s = "";
+					if (tmp > Short.MAX_VALUE)
+					{
+						CC = 0b1000;
+						s += " Result OVERFLOW";
+					}
+					else if (tmp < Short.MIN_VALUE)
+					{
+						CC = 0b0100;
+						s += " Result UNDERFLOW";
+					}
+					else
+						CC = 0b0000;
+					Reg[reg] -= MBR;
+					PC++;
+					printLog("SMR: Reg[" + reg + "] = " + (int) Reg[reg] + s);
+					break;
+				}
+			}
 			case 06: // AIR
-				Reg[reg] += IR & 0x001F;
-				if (Reg[reg] > Short.MAX_VALUE)
+			{
+				short r = (short) Reg[reg];
+				int tmp = r + Immed;
+				String s = "";
+				if (tmp > Short.MAX_VALUE)
 				{
 					CC = 0b1000;
-					printLog("Result OVERFLOW");
-					Reg[reg] = Reg[reg] & 0x0000FFFF;
+					s += " Result OVERFLOW";
 				}
-				else if (Reg[reg] < Short.MIN_VALUE)
+				else if (tmp < Short.MIN_VALUE)
 				{
 					CC = 0b0100;
-					printLog("Result UNDERFLOW");
-					Reg[reg] = Reg[reg] & 0x0000FFFF;
+					s += " Result UNDERFLOW";
 				}
 				else
 					CC = 0b0000;
+				Reg[reg] += Immed;
 				PC++;
-				printLog("AIR: Reg[" + reg + "] -> " + Reg[reg]);
+				printLog("AIR: Reg[" + reg + "] = " + (int) Reg[reg] + s);
 				break;
+			}
 			case 07: // SIR
-				Reg[reg] -= IR & 0x001F;
-				if (Reg[reg] > Short.MAX_VALUE)
+			{
+				short r = (short) Reg[reg];
+				int tmp = r - Immed;
+				String s = "";
+				if (tmp > Short.MAX_VALUE)
 				{
 					CC = 0b1000;
-					printLog("Result OVERFLOW");
-					Reg[reg] = Reg[reg] & 0x0000FFFF;
+					s += " Result OVERFLOW";
 				}
-				else if (Reg[reg] < Short.MIN_VALUE)
+				else if (tmp < Short.MIN_VALUE)
 				{
 					CC = 0b0100;
-					printLog("Result UNDERFLOW");
-					Reg[reg] = Reg[reg] & 0x0000FFFF;
+					s += " Result UNDERFLOW";
 				}
 				else
 					CC = 0b0000;
+				Reg[reg] = (char) tmp;
 				PC++;
-				printLog("SIR: Reg[" + reg + "] -> " + Reg[reg]);
+				printLog("SIR: Reg[" + reg + "] = " + (int) Reg[reg] + s);
 				break;
-
+			}
 			case 010: // JZ
-				PC = (Reg[reg] == 0) ? EA : PC + 1;
-				printLog("JZ: PC -> " + PC);
-				break;
-			case 011: // JNE
-				PC = (Reg[reg] != 0) ? EA : PC + 1;
-				printLog("JNE: PC -> " + PC);
-				break;
-			case 012: // JCC
-				int tmp = 1 << (3 - reg);
-				PC = (CC == tmp) ? EA : PC + 1;
-				printLog("JCC: PC -> " + PC);
-				break;
-			case 013: // JMA
-				PC = EA;
-				printLog("JMA: PC -> " + PC);
-				break;
-			case 014: // JSR
-				Reg[3] = PC + 1;
-				PC = EA;
-				printLog("JSR: Reg[3] -> " + Reg[3] + " PC -> " + PC);
-				break;
-			case 015: // RFS
-				Reg[0] = IR & 0x001F;
-				PC = Reg[3];
-				printLog("RFS: Reg[0] -> " + Reg[0] + " PC -> " + PC);
-				break;
-			case 016: // SOB
-				Reg[reg]--;
-				if (Reg[reg] > Short.MAX_VALUE)
+			{
+				if (Reg[reg] == 0)
 				{
-					CC = 0b1000;
-					printLog("Result OVERFLOW");
-					Reg[reg] = Reg[reg] & 0x0000FFFF;
-				}
-				else if (Reg[reg] < Short.MIN_VALUE)
-				{
-					CC = 0b0100;
-					printLog("Result UNDERFLOW");
-					Reg[reg] = Reg[reg] & 0x0000FFFF;
+					PC = (char) EA;
+					printLog("JZ: Jump To " + (int) PC);
 				}
 				else
-					CC = 0b0000;
-				PC = (Reg[reg] > 0) ? EA : PC + 1;
-				printLog("SOB: Reg[" + reg + "] -> " + Reg[reg] + " PC -> " + PC);
+				{
+					PC++;
+					printLog("JZ: Not Jump");
+				}
 				break;
+			}
+			case 011: // JNE
+			{
+				if (Reg[reg] != 0)
+				{
+					PC = (char) EA;
+					printLog("JNE: Jump To " + (int) PC);
+				}
+				else
+				{
+					PC++;
+					printLog("JNE: Not Jump");
+				}
+				break;
+			}
+			case 012: // JCC
+			{
+				int tmp = 1 << (3 - reg);
+				if ((int) CC == tmp)
+				{
+					PC = (char) EA;
+					printLog("JCC: Jump To " + (int) PC);
+				}
+				else
+				{
+					PC++;
+					printLog("JCC: Not Jump");
+				}
+				break;
+			}
+			case 013: // JMA
+			{
+				PC = (char) EA;
+				printLog("JMA: Jump To " + (int) PC);
+				break;
+			}
+			case 014: // JSR
+			{
+				Reg[3] = (char) (PC + 1);
+				PC = (char) EA;
+				printLog("JSR: Reg[3] = " + (int) Reg[3] + " Jump To " + PC);
+				break;
+			}
+			case 015: // RFS
+			{
+				Reg[0] = (char) Immed;
+				PC = Reg[3];
+				printLog("RFS: Reg[0] = " + (int) Reg[0] + " Return To " + PC);
+				break;
+			}
+			case 016: // SOB
+			{
+				short r = (short) Reg[reg];
+				r--;
+				Reg[reg] = (char) r;
+				if (r > 0)
+				{
+					PC = (char) EA;
+					printLog("SOB: Reg[" + reg + "] = " + (int) Reg[reg] + " Branch To " + (int) PC);
+				}
+				else
+				{
+					PC++;
+					printLog("SOB: Reg[" + reg + "] = " + (int) Reg[reg] + " Not Branch");
+				}
+				break;
+			}
 			case 017: // JGE
-				PC = (Reg[reg] >= 0) ? EA : PC + 1;
-				printLog("JGE: PC -> " + PC);
+			{
+				short r = (short) Reg[reg];
+				if (r >= 0)
+				{
+					PC = (char) EA;
+					printLog("JGE: Jump To " + (int) PC);
+				}
+				else
+				{
+					PC++;
+					printLog("JGE: Not Jump");
+				}
 				break;
-
+			}
 			case 020: // MLT
-				long result = Reg[reg] * Reg[xreg];
+			{
+				short r1 = (short) Reg[reg];
+				short r2 = (short) Reg[xreg];
+				long result = r1 * r2;
+				String s = "";
 				if (result > Integer.MAX_VALUE)
 				{
 					CC = 0b1000;
-					printLog("Result OVERFLOW");
+					s += " Result OVERFLOW";
 				}
 				else if (result < Integer.MIN_VALUE)
 				{
 					CC = 0b0100;
-					printLog("Result UNDERFLOW");
+					s += " Result UNDERFLOW";
 				}
 				else
 					CC = 0b0000;
 				int re = (int) result;
-				Reg[reg] = re >>> 16;
-				Reg[reg + 1] = re & 0x0000FFFF;
+				Reg[reg] = (char) (re >>> 16);
+				Reg[reg + 1] = (char) (re & 0x0000FFFF);
 				PC++;
-				printLog("MLT: Reg[" + reg + "] -> " + Reg[reg] + " Reg[" + (reg + 1) + "] -> " + Reg[reg + 1]);
+				printLog("MLT: Reg[" + reg + "] = " + (int) Reg[reg] + " Reg[" + (reg + 1) + "] = " + (int) Reg[reg + 1] + s);
 				break;
+			}
 			case 021: // DVD
+			{
 				if (Reg[xreg] == 0)
+				{
 					CC = 0b0010;
+					printLog("DVD: DIVZERO");
+				}
 				else
 				{
-					CC = 0b00;
-					int quotient = Reg[reg] / Reg[xreg];
-					int remainder = Reg[reg] % Reg[xreg];
-					Reg[reg] = quotient;
-					Reg[reg + 1] = remainder;
+					CC = 0b0000;
+					short r1 = (short) Reg[reg];
+					short r2 = (short) Reg[xreg];
+					int quotient = r1 / r2;
+					int remainder = r1 % r2;
+					Reg[reg] = (char) quotient;
+					Reg[reg + 1] = (char) remainder;
+					printLog("DVD: Reg[" + reg + "] = " + (int) Reg[reg] + " Reg[" + (reg + 1) + "] = " + (int) Reg[reg + 1]);
 				}
 				PC++;
-				printLog("DVD: Reg[" + reg + "] -> " + Reg[reg] + " Reg[" + (reg + 1) + "] -> " + Reg[reg + 1]);
 				break;
+			}
 			case 022: // TRR
-				CC = (Reg[reg] == Reg[xreg]) ? 0b0001 : 0b0000;
+			{
+				String s = "";
+				if (Reg[reg] == Reg[xreg])
+				{
+					CC = 0b0001;
+					s += " Equal";
+				}
+				else
+				{
+					CC = 0b0000;
+					s += " Not Equal";
+				}
 				PC++;
-				printLog("TRR: CC -> " + CC);
+				printLog("TRR: CC = " + (int) CC + s);
 				break;
+			}
 			case 023: // AND
+			{
 				Reg[reg] &= Reg[xreg];
 				PC++;
-				printLog("AND: Reg[" + reg + "] -> " + Reg[reg]);
+				printLog("AND: Reg[" + reg + "] = " + (int) Reg[reg]);
 				break;
+			}
 			case 024: // ORR
+			{
 				Reg[reg] |= Reg[xreg];
 				PC++;
-				printLog("ORR: Reg[" + reg + "] -> " + Reg[reg]);
+				printLog("ORR: Reg[" + reg + "] = " + (int) Reg[reg]);
 				break;
+			}
 			case 025: // NOT
-				Reg[reg] = ~Reg[reg];
+			{
+				Reg[reg] = (char) ~Reg[reg];
 				PC++;
-				printLog("NOT: Reg[" + reg + "] -> " + Reg[reg]);
+				printLog("NOT: Reg[" + reg + "] = " + (int) Reg[reg]);
 				break;
-
+			}
 			case 031: // SRC
+			{
 				if (A_L == 1)
 				{
 					if (L_R == 1)
-						Reg[reg] = Reg[reg] << Addr;
+						Reg[reg] = (char) (Reg[reg] << Addr);
 					else
-					{
-						Reg[reg] = Reg[reg] & 0x0000FFFF;
-						Reg[reg] = Reg[reg] >>> Addr;
-					}
+						Reg[reg] = (char) (Reg[reg] >> Addr);
 				}
 				else
 				{
-					int flag = Reg[reg] & 0x00008000;
+					short r = (short) Reg[reg];
 					if (L_R == 1)
-					{
-						Reg[reg] = Reg[reg] << Addr;
-						Reg[reg] = Reg[reg] & 0x0000FFFF;
-						Reg[reg] = Reg[reg] | flag;
-					}
+						r = (short) (r << Addr);
 					else
-						Reg[reg] = Reg[reg] >> Addr;
+						r = (short) (r >> Addr);
+					Reg[reg] = (char) r;
 				}
 				PC++;
-				printLog("SRC: Reg[" + reg + "] -> " + Reg[reg]);
+				printLog("SRC: Reg[" + reg + "] = " + (int) Reg[reg]);
 				break;
+			}
 			case 032: // RRC
+			{
 				if (L_R == 1)
 				{
-					int pre = (Reg[reg] > 0) ? 0x00000000 : 0xFFFF0000;
 					int flag = 0;
 					for (int i = 0; i < Addr; i++)
 					{
-						flag = ((Reg[reg] & 0x00008000) == 0) ? 0 : 1;
-						Reg[reg] = Reg[reg] << 1;
-						Reg[reg] = Reg[reg] | flag;
+						flag = ((Reg[reg] & 0x8000) == 0) ? 0 : 1;
+						Reg[reg] = (char) (Reg[reg] << 1);
+						Reg[reg] = (char) (Reg[reg] | flag);
 					}
-					Reg[reg] = Reg[reg] | pre;
 				}
 				else
 				{
-					Reg[reg] = Reg[reg] & 0x0000FFFF;
 					int flag = 0;
 					for (int i = 0; i < Addr; i++)
 					{
-						flag = ((Reg[reg] & 1) == 0) ? 0x00000000 : 0x80000000;
-						Reg[reg] = Reg[reg] >> 1;
-						Reg[reg] = Reg[reg] | flag;
+						flag = ((Reg[reg] & 1) == 0) ? 0x0000 : 0x8000;
+						Reg[reg] = (char) (Reg[reg] >> 1);
+						Reg[reg] = (char) (Reg[reg] | flag);
 					}
-					Reg[reg] = (flag == 0) ? Reg[reg] : Reg[reg] | 0xFFFF0000;
 				}
 				PC++;
-				printLog("RRC: Reg[" + reg + "] -> " + Reg[reg]);
+				printLog("RRC: Reg[" + reg + "] = " + (int) Reg[reg]);
 				break;
-
+			}
 			case 036: // TRAP
-				// TODO
-				printLog("TRAP");
+			{
+				store(2, (char) (PC + 1));
+				PC = 0;
+				printLog("TRAP: code = " + code);
+				int tmp = load(PC) + code;
+				if (load(tmp) == 0)
+					handleMachineFault(1);
+				else
+				{
+					PC = MBR;
+					run();
+				}
+				load(2);
+				PC = MBR;
 				break;
-
+			}
 			case 041: // LDX
-				XReg[xreg - 1] = load(EA);
-				PC++;
-				printLog("LDX: XReg[" + xreg + "] -> " + XReg[xreg - 1]);
-				break;
+			{
+				if (load(EA) == Integer.MIN_VALUE)
+					return;
+				else
+				{
+					XReg[xreg - 1] = MBR;
+					PC++;
+					printLog("LDX: XReg[" + xreg + "] = " + (int) XReg[xreg - 1]);
+					break;
+				}
+			}
 			case 042: // STX
-				store(EA, XReg[xreg - 1]);
-				PC++;
-				printLog("STX: Memory[" + EA + "] -> " + XReg[xreg - 1]);
+			{
+				if (store(EA, XReg[xreg - 1]) == Integer.MIN_VALUE)
+					return;
+				else
+				{
+					PC++;
+					printLog("STX: Memory[" + EA + "] = " + (int) XReg[xreg - 1]);
+				}
 				break;
-
+			}
 			case 061: // IN
+			{
 				if (inputFlag == 1)
 				{
 					if (devID == 0)
 						Reg[reg] = keyboardInput;
 					PC++;
-					printLog("IN: Reg[" + reg + "] -> " + Reg[reg]);
+					printLog("IN: Reg[" + reg + "] = " + (int) Reg[reg]);
 					inputFlag = 0;
 				}
 				else
 				{
 					inputFlag = -1;
-					String s = "";
-					switch (devID)
-					{
-						case 0:
-							s += " from keyboard";
-							break;
-						case 2:
-							s += " from card reader";
-							break;
-					}
-					printLog("Waiting for input" + s);
+					printLog("Waiting for input for keyboard");
 				}
 				break;
+			}
 			case 062: // OUT
+			{
 				printLog("OUT");
 				if (devID == 1)
-					printLog("Printer Output: " + Reg[reg]);
+					printLog("Printer Output: " + (int) Reg[reg]);
 				PC++;
 				break;
+			}
 			default:
-				PC = 4;
-				printLog("Invalid Instruction! IR: " + Integer.toBinaryString(IR));
-				break;
-		}
-	}
-
-	// for the outside to set the IR value
-	public void setIR(int ir)
-	{ IR = ir; }
-
-	// store value into memory
-	public void store(int address, int value)
-	{
-		// check if address and value are valid
-		if (address > 65536)
-			printLog("Invalid Address " + address + ". Address must no more than 16 bits!");
-		else
-		{
-			MAR = address;
-			if (value > 65536)
-				printLog("Invalid Value to Store: " + value + ". Value must no more than 16 bits!");
-			else
 			{
-				MBR = value;
-				memory.storeCache(address, value);
+				handleMachineFault(2);
+				break;
 			}
 		}
 	}
@@ -429,71 +528,115 @@ public class CPU extends Thread
 	// load value from memory
 	public int load(int address)
 	{
-		// check if address is valid
-		if (address > 65536)
+		MAR = (char) address;
+		if (MAR <= 5)
 		{
-			printLog("Invalid Address: " + address + ". Address must no more than 16 bits!");
-			return Integer.MAX_VALUE;
+			handleMachineFault(0);
+			return Integer.MIN_VALUE;
 		}
 		else
 		{
-			MAR = address;
 			int tmp = memory.loadCache(address);
-			if (tmp == Integer.MAX_VALUE)
-				return Integer.MAX_VALUE;
+			if (tmp == Integer.MIN_VALUE)
+				handleMachineFault(3);
 			else
-			{
-				MBR = tmp;
-				return MBR;
-			}
+				MBR = (char) tmp;
+			return tmp;
 		}
 	}
 
-	// for out side to set registers value
-	public void setRegister(int index, int value)
+	// store value into memory
+	public int store(int address, char value)
 	{
+		// check if address and value are valid
+		MAR = (char) address;
+		if (MAR <= 5)
+		{
+			handleMachineFault(0);
+			return Integer.MIN_VALUE;
+		}
+		else
+		{
+			MBR = value;
+			int tmp = memory.storeCache(address, value);
+			if (tmp == Integer.MIN_VALUE)
+				handleMachineFault(3);
+			return tmp;
+		}
+	}
+
+	// handle machine fault
+	public void handleMachineFault(int id)
+	{
+		store(4, (char) (PC + 1));
+		PC = 1;
+		MFR = (char) (1 << id);
+	}
+
+	// for the outside to set the IR value
+	public void setIR(char ir)
+	{ IR = ir; }
+
+	// for out side to set registers value
+	public void setRegister(int index, char value)
+	{
+		String s = "";
 		switch (index)
 		{
 			case 0:
 				Reg[0] = value;
+				s += "Reg[0]";
 				break;
 			case 1:
 				Reg[1] = value;
+				s += "Reg[1]";
 				break;
 			case 2:
 				Reg[2] = value;
+				s += "Reg[2]";
 				break;
 			case 3:
 				Reg[3] = value;
+				s += "Reg[3]";
 				break;
 			case 4:
 				XReg[0] = value;
+				s += "XReg[1]";
 				break;
 			case 5:
 				XReg[1] = value;
+				s += "XReg[2]";
 				break;
 			case 6:
 				XReg[2] = value;
+				s += "XReg[3]";
 				break;
 			case 7:
 				PC = value;
+				s += "PC";
 				break;
 			case 8:
 				IR = value;
+				s += "IR";
 				break;
 			case 9:
 				CC = value;
+				s += "CC";
 				break;
 			case 10:
 				MAR = value;
+				s += "MAR";
 				break;
 			case 11:
 				MBR = value;
+				s += "MBR";
 				break;
 			case 12:
 				MFR = value;
+				s += "MFR";
 				break;
 		}
+		printLog("Set " + s + " = " + (int) value);
 	}
 
 	// for out side to get registers value
@@ -527,22 +670,22 @@ public class CPU extends Thread
 				return MBR;
 			case 12:
 				return MFR;
+			default: // if index is invalid, return an invalid value
+				return Integer.MIN_VALUE;
 		}
-		// if index is not valid, return a invalid value for 16 bits register
-		return Integer.MAX_VALUE;
 	}
 
 	// set when get a input from keyboard panel
 	public void setKeyboardInput(int key)
 	{
-		if (key >= 0 && key <= 65536)
+		if (key <= 32767 && key >= -32768)
 		{
-			keyboardInput = key;
+			keyboardInput = (char) key;
 			inputFlag = 1;
 			run();
 		}
 		else
-			printLog("Invalid Input Value! Please Input Another Value");
+			printLog("Input Value Out of Range! Please Input Again");
 	}
 
 	// set when get input from card reader
@@ -552,18 +695,32 @@ public class CPU extends Thread
 		{
 			String s = ss[i];
 			int tmp = Integer.valueOf(s, 2);
-			IR = tmp;
+			IR = (char) tmp;
 			runInstruction();
 		}
 	}
 
+	// clear the CPU, reset all values to initial state
+	public void clear()
+	{
+		Reg = new char[] { 0, 0, 0, 0 };
+		XReg = new char[] { 0, 0, 0 };
+		PC = IR = CC = 0;
+		MAR = MBR = MFR = 0;
+		inputFlag = 0;
+	}
+
+	// set the log console reference
+	public void setTextPane(JTextPane log)
+	{ textPane = log; }
+
 	// print log of CPU
 	public void printLog(String s)
 	{
-		Document doc = logTextPane.getDocument();
+		Document doc = textPane.getDocument();
 		s = "\n" + s;
 		SimpleAttributeSet attrSet = null;
-		if (s.contains("Invalid"))
+		if (s.contains("Error"))
 		{
 			attrSet = new SimpleAttributeSet();
 			StyleConstants.setForeground(attrSet, Color.RED);
@@ -580,19 +737,6 @@ public class CPU extends Thread
 		{
 			System.out.println("BadLocationException: " + e);
 		}
-		logTextPane.setCaretPosition(doc.getLength());
-	}
-
-	// set the log console reference
-	public void setTextPane(JTextPane log)
-	{ logTextPane = log; }
-
-	// clear the CPU, reset all value to 0
-	public void clear()
-	{
-		Reg = new int[] { 0, 0, 0, 0 };
-		XReg = new int[] { 0, 0, 0 };
-		PC = IR = CC = 0;
-		MAR = MBR = MFR = 0;
+		textPane.setCaretPosition(doc.getLength());
 	}
 }

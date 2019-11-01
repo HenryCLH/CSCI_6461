@@ -11,62 +11,50 @@ import javax.swing.text.StyleConstants;
 
 public class Memory
 {
-	private JTextPane logTextPane;	// reference of log console on UI
+	private JTextPane textPane;	// reference of log console on UI
 
-	private int[] mem;		// 2048 words each is 16 bits
-	private int[] expMem;	// an expend 2048 words
-	private boolean expFlag;	// flag mark whether the memory has expanded
-
+	private char[] memory;		// 2048 words each is 16 bits
+	private boolean expandFlag;	// flag mark if the memory has been expanded
 	private LinkedList<CacheLine> cache;	// cache list
 
 	// constructor
 	Memory()
 	{
-		// use integer to simulate the memory to store word
-		mem = new int[2048];
-		expMem = new int[2048];
-		expFlag = false;
-
+		// use short value to simulate the memory to store word
+		memory = new char[2048];
+		expandFlag = false;
 		cache = new LinkedList<CacheLine>();
 	}
 
 	// load data from memory
-	public int load(int address)
+	public char load(int address)
 	{
-		if (address < 2048)
-			return mem[address];
-		else if (expFlag)
-			return expMem[address - 2048];
+		if (address >= 4096 || (!expandFlag && address >= 2048))
+		{
+			printError("Error: Load Memory Address Out of Range: " + address);
+			return 0;
+		}
 		else
-			return Integer.MAX_VALUE;
+			return memory[address];
 	}
 
 	// store data into memory
-	public int store(int address, int value)
+	public void store(int address, char value)
 	{
-		if (address < 2048)
-		{
-			mem[address] = value;
-			return 0;
-		}
-		else if (expFlag)
-		{
-			expMem[address - 2048] = value;
-			return 1;
-		}
+		if (address >= 4096 || (!expandFlag && address >= 2048))
+			printError("Error: Store Memory Address Out of Range: " + address);
 		else
-			return -1;
+			memory[address] = value;
 	}
 
 	// load data from cache
 	public int loadCache(int address)
 	{
-		// load from memory
-		int re = load(address);
-		if (re == Integer.MAX_VALUE)
+		// check if the address is valid
+		if (address >= 4096 || (!expandFlag && address >= 2048))
 		{
-			printLog("Load Failed! Invalid Address");
-			return re;
+			printError("Error: Load Memory Address Out of Range: " + address);
+			return Integer.MIN_VALUE;
 		}
 		else
 		{
@@ -76,32 +64,31 @@ public class Memory
 			{
 				cacheLine = cache.get(i);
 				if (cacheLine.getAddress() == address)	// hit
-				{
-					//printLog("Cache: Load Hit");
 					return cacheLine.getValue();
-				}
 			}
-			// not hit, create a new cache line and add it into cache
-			cacheLine = new CacheLine(address, re);
+			// not hit, load from memory, create a new cache line and add it into cache
+			char value = load(address);
+			cacheLine = new CacheLine(address, value);
 			if (cache.size() == 16)
 				cache.removeLast();
 			cache.addFirst(cacheLine);
-			//printLog("Cache: Load Miss");
 			return cacheLine.getValue();
 		}
 	}
 
 	// store data into cache, also into memory synchronously
-	public void storeCache(int address, int value)
+	public int storeCache(int address, char value)
 	{
-		// store into memory
-		int re = store(address, value);
-		if (re == -1)
+		// check is the address is valid
+		if (address >= 4096 || (!expandFlag && address >= 2048))
 		{
-			printLog("Store Failed! Invalid Address");
+			printError("Error: Store Memory Address Out of Range: " + address);
+			return Integer.MIN_VALUE;
 		}
 		else
 		{
+			// store into memory
+			store(address, value);
 			CacheLine cacheLine;
 			// check if the cache has the address
 			for (int i = 0; i < cache.size(); i++)
@@ -110,8 +97,7 @@ public class Memory
 				if (cacheLine.getAddress() == address) // hit
 				{
 					cacheLine.setValue(value);
-					//printLog("Cache: Store Hit");
-					return;
+					return 0;
 				}
 			}
 			// not hit, create a new cache line and add it into cache
@@ -119,21 +105,47 @@ public class Memory
 			if (cache.size() == 16)
 				cache.removeLast();
 			cache.addFirst(cacheLine);
-			//printLog("Cache: Store Miss");
+			return 0;
 		}
 	}
 
-	// print log of memory
-	public void printLog(String s)
+	//expand memory size from 2048 to 4096
+	public void expand()
 	{
-		Document doc = logTextPane.getDocument();
+		if (expandFlag)
+			printError("Error: Memory has been expanded");
+		else
+		{
+			char[] tmp = memory;
+			memory = new char[4096];
+			for (int i = 0; i < 2048; i++)
+			{
+				memory[i] = tmp[i];
+			}
+			expandFlag = true;
+		}
+	}
+
+	// clear the memory, reset all values to initial state
+	public void clear()
+	{
+		memory = new char[2048];
+		expandFlag = false;
+		cache = new LinkedList<CacheLine>();
+	}
+
+	// set the log console reference
+	public void setTextPane(JTextPane log)
+	{ textPane = log; }
+
+	// print error message of memory
+	public void printError(String s)
+	{
+		Document doc = textPane.getDocument();
 		s = "\n" + s;
 		SimpleAttributeSet attrSet = null;
-		if (s.contains("Invalid"))
-		{
-			attrSet = new SimpleAttributeSet();
-			StyleConstants.setForeground(attrSet, Color.RED);
-		}
+		attrSet = new SimpleAttributeSet();
+		StyleConstants.setForeground(attrSet, Color.RED);
 		try
 		{
 			doc.insertString(doc.getLength(), s, attrSet);
@@ -141,100 +153,66 @@ public class Memory
 		{
 			System.out.println("BadLocationException: " + e);
 		}
-		logTextPane.setCaretPosition(doc.getLength());
+		textPane.setCaretPosition(doc.getLength());
 	}
 
-	// set the log console reference
-	public void setTextPane(JTextPane log)
-	{ logTextPane = log; }
-
-	// clear the memory, reset all value to 0
-	public void clear()
-	{
-		mem = new int[2048];
-		expMem = new int[2048];
-		expFlag = false;
-
-		cache = new LinkedList<CacheLine>();
-	}
-
-	// load the memory value of Program 1 when push load1 button
+	// load Test Program 1 into memory
 	public void load1()
 	{
 		clear();
 		//data
-		store(29, 50);
-		store(30, 60);
-		store(53, Short.MAX_VALUE);
-		store(54, 20);
+		store(29, (char) 50);
+		store(30, (char) 60);
+		store(53, (char) 32767);
+		store(54, (char) 20);
 		// instruction
-		store(61, 0b1000010010011101);
-		store(62, 0b1000010011011110);
-		store(63, 0b0000011110000100);
-		store(64, 0b0001101000000001);
-		store(65, 0b0000101000011110);
-		store(66, 0b1000010001011110);
-		store(67, 0b1100010000000000);
-		store(68, 0b0000100001011110);
-		store(69, 0b0011101110001110);
-		store(70, 0b0001111000010101);
-		store(71, 0b0001101100000001);
-		store(72, 0b0000101100011110);
-		store(73, 0b1000010001011110);
-		store(74, 0b1100010000000000);
-		store(75, 0b0000100010000001);
-		store(76, 0b0000010010000001);
-		store(77, 0b0001010001011110);
-		store(78, 0b0011110011010110);
-		store(79, 0b0100000010000000);
-		store(80, 0b0000100100011110);
-		store(81, 0b0000010000011110);
-		store(82, 0b0000100000011110);
-		store(83, 0b0001010010000011);
-		store(84, 0b0011110011011100);
-		store(85, 0b0000010000011110);
-		store(86, 0b0000100010000011);
-		store(87, 0b0000101110000010);
-		store(88, 0b0000010010000100);
-		store(89, 0b0001101100000001);
-		store(90, 0b0000101100011110);
-		store(91, 0b1000010001011110);
-		store(92, 0b0000101100011110);
-		store(93, 0b0001010000011110);
-		store(94, 0b0011110011010000);
-		store(95, 0b0000010010000010);
-		store(96, 0b0000100000011110);
-		store(97, 0b1000010001011110);
-		store(98, 0b0000010001011110);
-		store(99, 0b1100100000000001);
+		store(61, (char) 0b1000010010011101);
+		store(62, (char) 0b1000010011011110);
+		store(63, (char) 0b0000011110000100);
+		store(64, (char) 0b0001101000000001);
+		store(65, (char) 0b0000101000011110);
+		store(66, (char) 0b1000010001011110);
+		store(67, (char) 0b1100010000000000);
+		store(68, (char) 0b0000100001011110);
+		store(69, (char) 0b0011101110001110);
+		store(70, (char) 0b0001111000010101);
+		store(71, (char) 0b0001101100000001);
+		store(72, (char) 0b0000101100011110);
+		store(73, (char) 0b1000010001011110);
+		store(74, (char) 0b1100010000000000);
+		store(75, (char) 0b0000100010000001);
+		store(76, (char) 0b0000010010000001);
+		store(77, (char) 0b0001010001011110);
+		store(78, (char) 0b0011110011010110);
+		store(79, (char) 0b0100000010000000);
+		store(80, (char) 0b0000100100011110);
+		store(81, (char) 0b0000010000011110);
+		store(82, (char) 0b0000100000011110);
+		store(83, (char) 0b0001010010000011);
+		store(84, (char) 0b0011110011011100);
+		store(85, (char) 0b0000010000011110);
+		store(86, (char) 0b0000100010000011);
+		store(87, (char) 0b0000101110000010);
+		store(88, (char) 0b0000010010000100);
+		store(89, (char) 0b0001101100000001);
+		store(90, (char) 0b0000101100011110);
+		store(91, (char) 0b1000010001011110);
+		store(92, (char) 0b0000101100011110);
+		store(93, (char) 0b0001010000011110);
+		store(94, (char) 0b0011110011010000);
+		store(95, (char) 0b0000010010000010);
+		store(96, (char) 0b0000100000011110);
+		store(97, (char) 0b1000010001011110);
+		store(98, (char) 0b0000010001011110);
+		store(99, (char) 0b1100100000000001);
 	}
 
-	// load the memory value of a test program when push the IPL button
+	// load IPL program into memory
 	public void loadROM()
 	{
 		clear();
-		store(6, 17);
-		store(12, 5);
-		store(16, 6);
-
-		store(30, 0b1000010001010000); // LDX X1, 16
-		store(31, 0b1000010010110000); // LDX X2, 16[,I]
-		store(32, 0b1000100001010010); // STX X1, 18
-		store(33, 0b1000100010100110); // STX X2, 6[,I]
-
-		store(34, 0b0000010000000110); // LDR R0, 6
-		store(35, 0b0000010100100110); // LDR R1, 6[,I]
-		store(36, 0b0000011001001100); // LDR R2, X1, 12
-		store(37, 0b0000011101110010); // LDR R3, X1, 18[,I]
-
-		store(38, 0b0000100000000111); // STR R0, 7
-		store(39, 0b0000100100100111); // STR R1, 7[,I]
-		store(40, 0b0000101001000010); // STR R2, X1, 2
-		store(41, 0b0000101101110010); // STR R3, X1, 18[,I]
-
-		store(42, 0b0000110000001100); // LDA R0, 12
-		store(43, 0b0000110100101100); // LDA R1, 12[,I]
-		store(44, 0b0000111001001100); // LDA R2, X1, 12
-		store(45, 0b0000111101101100); // LDA R3, X1, 12[,I]
+		store(0, (char) 7); // PC for a Trap
+		store(1, (char) 6); // PC for a machine fault
+		store(6, (char) 4); // HLT for machine fault
 	}
 }

@@ -24,6 +24,8 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.PlainDocument;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
 
 public class Computer
 {
@@ -170,7 +172,6 @@ public class Computer
 		// log console
 		logTextPane = new JTextPane();
 		logTextPane.setEditable(false);
-		logTextPane.setText("-------Start-------");
 
 		logScrollPane = new JScrollPane(logTextPane);
 		logScrollPane.setBounds(465, 30, 333, 550);
@@ -276,60 +277,24 @@ public class Computer
 					{
 						char ch = s.charAt(i);
 						if (ch != '0' && ch != '1' && ch != ',')
+						{
+							printLog("Set Register Value Failed! Value Has Invalid Character");
+							refresh();
 							return;
+						}
 						else if (ch != ',')
 						{
 							ss += ch;
 							count++;
 							if (count > 16)
+							{
+								printLog("Set Register Value Failed! Value Is Over Range");
+								refresh();
 								return;
+							}
 						}
 					}
-					cpu.setRegister(row, Integer.parseInt(ss, 2));
-					String index = "";
-					switch (row)
-					{
-						case 0:
-							index = "Reg[0]";
-							break;
-						case 1:
-							index = "Reg[1]";
-							break;
-						case 2:
-							index = "Reg[2]";
-							break;
-						case 3:
-							index = "Reg[3]";
-							break;
-						case 4:
-							index = "XReg[1]";
-							break;
-						case 5:
-							index = "XReg[2]";
-							break;
-						case 6:
-							index = "XReg[3]";
-							break;
-						case 7:
-							index = "PC";
-							break;
-						case 8:
-							index = "IR";
-							break;
-						case 9:
-							index = "CC";
-							break;
-						case 10:
-							index = "MAR";
-							break;
-						case 11:
-							index = "MBR";
-							break;
-						case 12:
-							index = "MFR";
-							break;
-					}
-					printLog("Change " + index + " -> " + ss + "\n");
+					cpu.setRegister(row, (char) Integer.parseInt(ss, 2));
 				}
 				refresh();
 			}
@@ -358,17 +323,25 @@ public class Computer
 					{
 						char ch = s.charAt(i);
 						if (ch != '0' && ch != '1' && ch != ',')
+						{
+							printLog("Set Memory Value Failed! Value Has Invalid Character");
+							refresh();
 							return;
+						}
 						else if (ch != ',')
 						{
 							ss += ch;
 							count++;
 							if (count > 16)
+							{
+								printLog("Set Memory Value Failed! Value Is Over Range");
+								refresh();
 								return;
+							}
 						}
 					}
-					memory.store(row, Integer.parseInt(ss, 2));
-					printLog("Change Memory[" + row + "] -> " + ss + "\n");
+					memory.store(row, (char) Integer.parseInt(ss, 2));
+					printLog("Set Memory[" + row + "] = " + ss);
 				}
 				refresh();
 			}
@@ -378,6 +351,17 @@ public class Computer
 			@Override
 			public void mouseClicked(MouseEvent e)
 			{ registerTable.clearSelection(); }
+		});
+
+		// keyboard text field listener
+		keyboardTextField.addKeyListener(new KeyAdapter()
+		{
+			public void keyReleased(KeyEvent e)
+			{
+				// use key Enter to input value
+				if (e.getKeyChar() == '\n')
+					cpu.setKeyboardInput(Integer.parseInt(keyboardTextField.getText()));
+			}
 		});
 
 		// button action listener
@@ -391,7 +375,7 @@ public class Computer
 					case "IPL":
 						memory.loadROM();
 						cpu.clear();
-						cpu.setRegister(7, 30);
+						logTextPane.setText("-------Start-------");
 						break;
 					case "Run":
 						cpu.run();
@@ -402,7 +386,7 @@ public class Computer
 					case "Load1":
 						memory.load1();
 						cpu.clear();
-						cpu.setRegister(7, 61);
+						cpu.setRegister(7, (char) 61);
 						cpu.run();
 						break;
 					case "Execute":
@@ -412,11 +396,8 @@ public class Computer
 						if (s != null && s.length() > 0)
 						{
 							int tmp = Integer.parseInt(s, 2);
-							if (tmp >= 0 && tmp <= 65536)
-							{
-								cpu.setIR(tmp);
-								cpu.runInstruction();
-							}
+							cpu.setIR((char) tmp);
+							cpu.runInstruction();
 						}
 						break;
 					}
@@ -427,7 +408,18 @@ public class Computer
 					{
 						String s = cardReaderTextArea.getText();
 						String[] ss = s.split("\n");
-						cpu.setCardReaderInput(ss);
+						int tmpFlag = 0;
+						for (int i = 0; i < ss.length; i++)
+						{
+							if (ss[i].length() != 16 && ss[i].length() != 0)
+							{
+								cardReaderTextArea.setText("Read failed! Every line must be 16 bits");
+								tmpFlag = 1;
+								break;
+							}
+						}
+						if (tmpFlag == 0)
+							cpu.setCardReaderInput(ss);
 						break;
 					}
 				}
@@ -485,9 +477,16 @@ public class Computer
 	public void printLog(String s)
 	{
 		Document doc = logTextPane.getDocument();
+		s = "\n" + s;
+		SimpleAttributeSet attrSet = null;
+		if (s.contains("Failed"))
+		{
+			attrSet = new SimpleAttributeSet();
+			StyleConstants.setForeground(attrSet, Color.RED);
+		}
 		try
 		{
-			doc.insertString(doc.getLength(), s, null);
+			doc.insertString(doc.getLength(), s, attrSet);
 		} catch (BadLocationException e)
 		{
 			System.out.println("BadLocationException: " + e);
