@@ -50,6 +50,7 @@ public class Computer
 	private JButton runButton;
 	private JButton stepButton;
 	private JButton loadButton1;
+	private JButton loadButton2;
 	private JButton executeButton;
 
 	private JTextField inputTextField;
@@ -67,7 +68,7 @@ public class Computer
 	private JButton cardReaderButton;
 	private Label cardReaderLabel;
 
-	private JButton keyboardButton;
+	private Label keyboardLabel;
 	private JTextField keyboardTextField;
 
 	// main entrance
@@ -155,23 +156,25 @@ public class Computer
 		// buttons
 		buttonPanel = new JPanel();
 		buttonPanel.setLayout(new GridLayout(1, 5));
-		buttonPanel.setBounds(2, 590, 400, 30);
+		buttonPanel.setBounds(2, 590, 470, 30);
 
 		IPL = new JButton("IPL");
 		runButton = new JButton("Run");
 		stepButton = new JButton("Step");
 		loadButton1 = new JButton("Load1");
+		loadButton2 = new JButton("Load2");
 		executeButton = new JButton("Execute");
 
 		buttonPanel.add(IPL);
 		buttonPanel.add(runButton);
 		buttonPanel.add(stepButton);
 		buttonPanel.add(loadButton1);
+		buttonPanel.add(loadButton2);
 		buttonPanel.add(executeButton);
 
 		// input field for instructions
 		inputTextField = new JTextField();
-		inputTextField.setBounds(400, 590, 150, 30);
+		inputTextField.setBounds(470, 590, 150, 30);
 		inputTextField.setDocument(new PlainDocument()
 		{
 			public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException
@@ -241,12 +244,12 @@ public class Computer
 		cardReaderLabel = new Label("Card Reader");
 		cardReaderLabel.setBounds(2, 440, 110, 30);
 
-		// keyboard button
-		keyboardButton = new JButton("Keyboard");
-		keyboardButton.setBounds(550, 590, 90, 30);
+		// keyboard label
+		keyboardLabel = new Label("Keyboard");
+		keyboardLabel.setBounds(625, 590, 65, 30);
 		// keyboard input field
 		keyboardTextField = new JTextField();
-		keyboardTextField.setBounds(640, 590, 150, 30);
+		keyboardTextField.setBounds(690, 590, 100, 30);
 		keyboardTextField.setDocument(new PlainDocument()
 		{
 			public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException
@@ -286,7 +289,7 @@ public class Computer
 		window.add(cardReaderButton);
 		window.add(cardReaderScrollPane);
 
-		window.add(keyboardButton);
+		window.add(keyboardLabel);
 		window.add(keyboardTextField);
 
 		window.setVisible(true);
@@ -419,12 +422,12 @@ public class Computer
 				{
 					case "IPL":
 					{
+						logTextPane.setText("-------Start-------");
 						memoryTableModel.setRowCount(2048);
 						expandButton.setVisible(true);
 						memoryLabel.setText("Memory (2048 Words)");
 						memory.loadROM();
 						cpu.clear();
-						logTextPane.setText("-------Start-------");
 						break;
 					}
 					case "Run":
@@ -438,7 +441,13 @@ public class Computer
 						memory.load1();
 						cpu.clear();
 						cpu.setRegister(7, (char) 61);
-						cpu.run();
+						break;
+					}
+					case "Load2":
+					{
+						memory.load2();
+						cpu.clear();
+						cpu.setRegister(7, (char) 6);
 						break;
 					}
 					case "Execute":
@@ -495,8 +504,8 @@ public class Computer
 		runButton.addActionListener(buttonListener);
 		stepButton.addActionListener(buttonListener);
 		loadButton1.addActionListener(buttonListener);
+		loadButton2.addActionListener(buttonListener);
 		executeButton.addActionListener(buttonListener);
-		keyboardButton.addActionListener(buttonListener);
 		cardReaderButton.addActionListener(buttonListener);
 		expandButton.addActionListener(buttonListener);
 	}

@@ -31,7 +31,7 @@ public class Memory
 	{
 		if (address >= 4096 || (!expandFlag && address >= 2048))
 		{
-			printError("Error: Load Memory Address Out of Range: " + address);
+			printLog("Error: Load Memory Address Out of Range: " + address);
 			return 0;
 		}
 		else
@@ -42,7 +42,7 @@ public class Memory
 	public void store(int address, char value)
 	{
 		if (address >= 4096 || (!expandFlag && address >= 2048))
-			printError("Error: Store Memory Address Out of Range: " + address);
+			printLog("Error: Store Memory Address Out of Range: " + address);
 		else
 			memory[address] = value;
 	}
@@ -53,7 +53,7 @@ public class Memory
 		// check if the address is valid
 		if (address >= 4096 || (!expandFlag && address >= 2048))
 		{
-			printError("Error: Load Memory Address Out of Range: " + address);
+			printLog("Error: Load Memory Address Out of Range: " + address);
 			return Integer.MIN_VALUE;
 		}
 		else
@@ -82,7 +82,7 @@ public class Memory
 		// check is the address is valid
 		if (address >= 4096 || (!expandFlag && address >= 2048))
 		{
-			printError("Error: Store Memory Address Out of Range: " + address);
+			printLog("Error: Store Memory Address Out of Range: " + address);
 			return Integer.MIN_VALUE;
 		}
 		else
@@ -113,7 +113,7 @@ public class Memory
 	public void expand()
 	{
 		if (expandFlag)
-			printError("Error: Memory has been expanded");
+			printLog("Error: Memory has been expanded");
 		else
 		{
 			char[] tmp = memory;
@@ -138,13 +138,17 @@ public class Memory
 	public void setTextPane(JTextPane log)
 	{ logTextPane = log; }
 
-	// print error message of memory
-	public void printError(String s)
+	// print log message of memory
+	public void printLog(String s)
 	{
 		Document doc = logTextPane.getDocument();
 		s = "\n" + s;
-		SimpleAttributeSet attrSet = new SimpleAttributeSet();
-		StyleConstants.setForeground(attrSet, Color.RED);
+		SimpleAttributeSet attrSet = null;
+		if (s.contains("Error"))
+		{
+			attrSet = new SimpleAttributeSet();
+			StyleConstants.setForeground(attrSet, Color.RED);
+		}
 		try
 		{
 			doc.insertString(doc.getLength(), s, attrSet);
@@ -155,9 +159,44 @@ public class Memory
 		logTextPane.setCaretPosition(doc.getLength());
 	}
 
+	// load IPL program into memory
+	public void loadROM()
+	{
+		printLog("Load ROM");
+		clear();
+		store(0, (char) 7); // PC for a Trap
+		store(1, (char) 6); // PC for a machine fault
+		store(6, (char) 4); // HLT for machine fault
+		// Trap instruction entries
+		// We use just 8 entries and all jump to same instructions
+		store(7, (char) 0b0010110000001111); // JMA jump to 15
+		store(8, (char) 0b0010110000001111); // JMA jump to 15
+		store(9, (char) 0b0010110000001111); // JMA jump to 15
+		store(10, (char) 0b0010110000001111); // JMA jump to 15
+		store(11, (char) 0b0010110000001111); // JMA jump to 15
+		store(12, (char) 0b0010110000001111); // JMA jump to 15
+		store(13, (char) 0b0010110000001111); // JMA jump to 15
+		store(14, (char) 0b0010110000001111); // JMA jump to 15
+		// Trap instructions
+		store(15, (char) 0b0000110000010101); // LDA 0, 0, 21
+		store(16, (char) 0b0110010011000010); // SRC 0, 2, 1, 1
+		store(17, (char) 0b1100100000000001); // OUT 0, 1 -- 'T'
+		store(18, (char) 0b0001110000000010); // SIR 0, 2
+		store(19, (char) 0b1100100000000001); // OUT 0, 1 -- 'R'
+		store(20, (char) 0b0001110000010001); // SIR 0, 17
+		store(21, (char) 0b1100100000000001); // OUT 0, 1 -- 'A'
+		store(22, (char) 0b0001100000001111); // AIR 0, 1111
+		store(23, (char) 0b1100100000000001); // OUT 0, 1 -- 'P'
+		store(24, (char) 0b0000110000001010); // LDA 0, 0, 10
+		store(25, (char) 0b1100100000000001); // OUT 0, 1 -- '\n'
+		store(26, (char) 0b0000011100000010); // LDR 3, 0, 2
+		store(27, (char) 0b0011010000000000); // RFS
+	}
+
 	// load Test Program 1 into memory
 	public void load1()
 	{
+		printLog("Load Test Program 1");
 		clear();
 		//data
 		store(29, (char) 50);
@@ -206,36 +245,10 @@ public class Memory
 		store(99, (char) 0b1100100000000001);
 	}
 
-	// load IPL program into memory
-	public void loadROM()
+	// load Test Program 2 into memory
+	public void load2()
 	{
+		printLog("Load Test Program 2");
 		clear();
-		store(0, (char) 7); // PC for a Trap
-		store(1, (char) 6); // PC for a machine fault
-		store(6, (char) 4); // HLT for machine fault
-		// Trap instruction entries
-		// We use just 8 entries and all jump to same instructions
-		store(7, (char) 0b0010110000001111); // JMA jump to 15
-		store(8, (char) 0b0010110000001111); // JMA jump to 15
-		store(9, (char) 0b0010110000001111); // JMA jump to 15
-		store(10, (char) 0b0010110000001111); // JMA jump to 15
-		store(11, (char) 0b0010110000001111); // JMA jump to 15
-		store(12, (char) 0b0010110000001111); // JMA jump to 15
-		store(13, (char) 0b0010110000001111); // JMA jump to 15
-		store(14, (char) 0b0010110000001111); // JMA jump to 15
-		// Trap instructions
-		store(15, (char) 0b0000110000010101); // LDA 0, 0, 21
-		store(16, (char) 0b0110010011000010); // SRC 0, 2, 1, 1
-		store(17, (char) 0b1100100000000001); // OUT 0, 1 -- 'T'
-		store(18, (char) 0b0001110000000010); // SIR 0, 2
-		store(19, (char) 0b1100100000000001); // OUT 0, 1 -- 'R'
-		store(20, (char) 0b0001110000010001); // SIR 0, 17
-		store(21, (char) 0b1100100000000001); // OUT 0, 1 -- 'A'
-		store(22, (char) 0b0001100000001111); // AIR 0, 1111
-		store(23, (char) 0b1100100000000001); // OUT 0, 1 -- 'P'
-		store(24, (char) 0b0000110000001010); // LDA 0, 0, 10
-		store(25, (char) 0b1100100000000001); // OUT 0, 1 -- '\n'
-		store(26, (char) 0b0000011100000010); // LDR 3, 0, 2
-		store(27, (char) 0b0011010000000000); // RFS
 	}
 }
