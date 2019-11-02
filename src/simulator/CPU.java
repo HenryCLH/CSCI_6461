@@ -22,6 +22,9 @@ public class CPU extends Thread
 	private char MBR;	// Memory Buffer Register 16 bits
 	private char MFR;	// Machine Fault Register 4 bits
 
+	private int reservedMemoryBounds = 24; // memory address bounds of the reserved part
+	private int trapCodeRange = 8; // the size of trap entries table
+
 	private char keyboardInput;	// number from the UI input console
 	private int inputFlag;	// mark if the CPU is waiting for user to input a number
 
@@ -109,14 +112,20 @@ public class CPU extends Thread
 			}
 			case 02: // STR
 			{
-				if (store(EA, Reg[reg]) == Integer.MIN_VALUE)
-					return;
+				MAR = (char) EA;
+				if (MAR <= reservedMemoryBounds)
+					handleMachineFault(0);
 				else
 				{
-					PC++;
-					printLog("STR: Memory[" + EA + "] = " + (int) Reg[reg]);
+					if (store(EA, Reg[reg]) == Integer.MIN_VALUE)
+						return;
+					else
+					{
+						PC++;
+						printLog("STR: Memory[" + EA + "] = " + (int) Reg[reg]);
+					}
+					break;
 				}
-				break;
 			}
 			case 03: // LDA
 			{
@@ -278,14 +287,14 @@ public class CPU extends Thread
 			{
 				Reg[3] = (char) (PC + 1);
 				PC = (char) EA;
-				printLog("JSR: Reg[3] = " + (int) Reg[3] + " Jump To " + PC);
+				printLog("JSR: Reg[3] = " + (int) Reg[3] + " Jump To " + (int) PC);
 				break;
 			}
 			case 015: // RFS
 			{
 				Reg[0] = (char) Immed;
 				PC = Reg[3];
-				printLog("RFS: Reg[0] = " + (int) Reg[0] + " Return To " + PC);
+				printLog("RFS: Reg[0] = " + (int) Reg[0] + " Return To " + (int) PC);
 				break;
 			}
 			case 016: // SOB
@@ -457,16 +466,10 @@ public class CPU extends Thread
 				store(2, (char) (PC + 1));
 				PC = 0;
 				printLog("TRAP: code = " + code);
-				int tmp = load(PC) + code;
-				if (load(tmp) == 0)
+				if (code > trapCodeRange)
 					handleMachineFault(1);
 				else
-				{
-					PC = MBR;
-					run();
-				}
-				load(2);
-				PC = MBR;
+					PC = (char) (load(PC) + code);
 				break;
 			}
 			case 041: // LDX
@@ -483,12 +486,18 @@ public class CPU extends Thread
 			}
 			case 042: // STX
 			{
-				if (store(EA, XReg[xreg - 1]) == Integer.MIN_VALUE)
-					return;
+				MAR = (char) EA;
+				if (MAR <= reservedMemoryBounds)
+					handleMachineFault(0);
 				else
 				{
-					PC++;
-					printLog("STX: Memory[" + EA + "] = " + (int) XReg[xreg - 1]);
+					if (store(EA, XReg[xreg - 1]) == Integer.MIN_VALUE)
+						return;
+					else
+					{
+						PC++;
+						printLog("STX: Memory[" + EA + "] = " + (int) XReg[xreg - 1]);
+					}
 				}
 				break;
 			}
@@ -513,7 +522,7 @@ public class CPU extends Thread
 			{
 				printLog("OUT");
 				if (devID == 1)
-					printLog("Printer Output: " + (int) Reg[reg]);
+					printLog("Printer Output: " + Reg[reg]);
 				PC++;
 				break;
 			}
@@ -529,20 +538,12 @@ public class CPU extends Thread
 	public int load(int address)
 	{
 		MAR = (char) address;
-		if (MAR <= 5)
-		{
-			handleMachineFault(0);
-			return Integer.MIN_VALUE;
-		}
+		int tmp = memory.loadCache(address);
+		if (tmp == Integer.MIN_VALUE)
+			handleMachineFault(3);
 		else
-		{
-			int tmp = memory.loadCache(address);
-			if (tmp == Integer.MIN_VALUE)
-				handleMachineFault(3);
-			else
-				MBR = (char) tmp;
-			return tmp;
-		}
+			MBR = (char) tmp;
+		return tmp;
 	}
 
 	// store value into memory
@@ -550,19 +551,11 @@ public class CPU extends Thread
 	{
 		// check if address and value are valid
 		MAR = (char) address;
-		if (MAR <= 5)
-		{
-			handleMachineFault(0);
-			return Integer.MIN_VALUE;
-		}
-		else
-		{
-			MBR = value;
-			int tmp = memory.storeCache(address, value);
-			if (tmp == Integer.MIN_VALUE)
-				handleMachineFault(3);
-			return tmp;
-		}
+		MBR = value;
+		int tmp = memory.storeCache(address, value);
+		if (tmp == Integer.MIN_VALUE)
+			handleMachineFault(3);
+		return tmp;
 	}
 
 	// handle machine fault
@@ -571,11 +564,14 @@ public class CPU extends Thread
 		store(4, (char) (PC + 1));
 		PC = 1;
 		MFR = (char) (1 << id);
+		printLog("Machine Fault: MFR = " + (int) MFR);
 	}
 
 	// for the outside to set the IR value
 	public void setIR(char ir)
 	{ IR = ir; }
+
+	// for outside to set register value
 
 	// for out side to set registers value
 	public void setRegister(int index, char value)
@@ -673,9 +669,10 @@ public class CPU extends Thread
 			default: // if index is invalid, return an invalid value
 				return Integer.MIN_VALUE;
 		}
+		// set when get a input from keyboard panel	
 	}
 
-	// set when get a input from keyboard panel
+	// set the input from keyboard
 	public void setKeyboardInput(int key)
 	{
 		if (key <= 32767 && key >= -32768)
@@ -688,6 +685,8 @@ public class CPU extends Thread
 			printLog("Input Value Out of Range! Please Input Again");
 	}
 
+	// set the input from card reader
+
 	// set when get input from card reader
 	public void setCardReaderInput(String[] ss)
 	{
@@ -699,6 +698,8 @@ public class CPU extends Thread
 			runInstruction();
 		}
 	}
+
+	// clear the CPU, reset all values to initial state
 
 	// clear the CPU, reset all values to initial state
 	public void clear()
@@ -714,13 +715,15 @@ public class CPU extends Thread
 	public void setTextPane(JTextPane log)
 	{ textPane = log; }
 
+	// print log
+
 	// print log of CPU
 	public void printLog(String s)
 	{
 		Document doc = textPane.getDocument();
 		s = "\n" + s;
 		SimpleAttributeSet attrSet = null;
-		if (s.contains("Error"))
+		if (s.contains("Error") || s.contains("Fault"))
 		{
 			attrSet = new SimpleAttributeSet();
 			StyleConstants.setForeground(attrSet, Color.RED);

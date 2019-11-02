@@ -9,6 +9,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Vector;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -36,9 +37,13 @@ public class Computer
 
 	private JTable registerTable;
 	private JScrollPane registerScrollPane;
+	private Label registerLabel;
 
 	private JTable memoryTable;
 	private JScrollPane memoryScrollPane;
+	private JButton expandButton;
+	private Label memoryLabel;
+	private DefaultTableModel memoryTableModel;
 
 	private JPanel buttonPanel;
 	private JButton IPL;
@@ -51,10 +56,12 @@ public class Computer
 
 	private JTextPane logTextPane;
 	private JScrollPane logScrollPane;
+	private Label logLabel;
 
 	private JTextArea cardReaderTextArea;
 	private JScrollPane cardReaderScrollPane;
 	private JButton cardReaderButton;
+	private Label cardReaderLabel;
 
 	private JButton keyboardButton;
 	private JTextField keyboardTextField;
@@ -105,6 +112,9 @@ public class Computer
 		registerScrollPane = new JScrollPane(registerTable);
 		registerScrollPane.setBounds(2, 30, 220, 410);
 
+		registerLabel = new Label("Register");
+		registerLabel.setBounds(3, 0, 100, 30);
+
 		// memory
 		String[] memoryColumnName = { "Index", "BinaryValue" };
 		String[][] memoryData = new String[2048][2];
@@ -112,7 +122,7 @@ public class Computer
 		{
 			memoryData[i][0] = Integer.toString(i);
 		}
-		memoryTable = new JTable(new DefaultTableModel(memoryData, memoryColumnName)
+		memoryTableModel = new DefaultTableModel(memoryData, memoryColumnName)
 		{
 			@Override
 			public boolean isCellEditable(int rowIndex, int columnIndex)
@@ -122,13 +132,20 @@ public class Computer
 				else
 					return true;
 			}
-		});
+		};
+		memoryTable = new JTable(memoryTableModel);
 		memoryTable.setGridColor(Color.BLACK);
 		memoryTable.setRowHeight(20);
 		memoryTable.getColumnModel().getColumn(0).setMaxWidth(40);
 
 		memoryScrollPane = new JScrollPane(memoryTable);
 		memoryScrollPane.setBounds(235, 30, 220, 550);
+		// memory expand button
+		expandButton = new JButton("Expand");
+		expandButton.setBounds(380, 0, 80, 30);
+
+		memoryLabel = new Label("Memory");
+		memoryLabel.setBounds(236, 0, 140, 30);
 
 		// buttons
 		buttonPanel = new JPanel();
@@ -176,6 +193,9 @@ public class Computer
 		logScrollPane = new JScrollPane(logTextPane);
 		logScrollPane.setBounds(465, 30, 333, 550);
 
+		logLabel = new Label("Log");
+		logLabel.setBounds(466, 0, 100, 30);
+
 		// card reader
 		cardReaderTextArea = new JTextArea();
 		cardReaderTextArea.setDocument(new PlainDocument()
@@ -202,6 +222,9 @@ public class Computer
 		cardReaderButton = new JButton("Read");
 		cardReaderButton.setBounds(112, 440, 90, 30);
 
+		cardReaderLabel = new Label("Card Reader");
+		cardReaderLabel.setBounds(2, 440, 110, 30);
+
 		// keyboard button
 		keyboardButton = new JButton("Keyboard");
 		keyboardButton.setBounds(550, 590, 90, 30);
@@ -227,26 +250,19 @@ public class Computer
 		});
 
 		// add all components into main frame
-		Label registerLabel = new Label("Register");
-		registerLabel.setBounds(3, 0, 100, 30);
 		window.add(registerLabel);
 		window.add(registerScrollPane);
 
-		Label memoryLabel = new Label("Memory");
-		memoryLabel.setBounds(236, 0, 100, 30);
 		window.add(memoryLabel);
 		window.add(memoryScrollPane);
+		window.add(expandButton);
 
-		Label logLabel = new Label("Log");
-		logLabel.setBounds(466, 0, 100, 30);
 		window.add(logLabel);
 		window.add(logScrollPane);
 
 		window.add(buttonPanel);
 		window.add(inputTextField);
 
-		Label cardReaderLabel = new Label("Card Reader");
-		cardReaderLabel.setBounds(2, 440, 110, 30);
 		window.add(cardReaderLabel);
 		window.add(cardReaderButton);
 		window.add(cardReaderScrollPane);
@@ -303,7 +319,12 @@ public class Computer
 		{
 			@Override
 			public void mouseClicked(MouseEvent e)
-			{ memoryTable.clearSelection(); }
+			{
+				if (memoryTable.isEditing())
+					memoryTable.getCellEditor().stopCellEditing();
+				memoryTable.clearSelection();
+				refresh();
+			}
 		});
 
 		// memory table listener
@@ -350,7 +371,12 @@ public class Computer
 		{
 			@Override
 			public void mouseClicked(MouseEvent e)
-			{ registerTable.clearSelection(); }
+			{
+				if (registerTable.isEditing())
+					registerTable.getCellEditor().stopCellEditing();
+				registerTable.clearSelection();
+				refresh();
+			}
 		});
 
 		// keyboard text field listener
@@ -373,10 +399,15 @@ public class Computer
 				switch (e.getActionCommand())
 				{
 					case "IPL":
+					{
+						memoryTableModel.setRowCount(2048);
+						expandButton.setVisible(true);
+						memoryLabel.setText("Memory (2048 Words)");
 						memory.loadROM();
 						cpu.clear();
 						logTextPane.setText("-------Start-------");
 						break;
+					}
 					case "Run":
 						cpu.run();
 						break;
@@ -384,11 +415,13 @@ public class Computer
 						cpu.stepRun();
 						break;
 					case "Load1":
+					{
 						memory.load1();
 						cpu.clear();
 						cpu.setRegister(7, (char) 61);
 						cpu.run();
 						break;
+					}
 					case "Execute":
 					{
 						String s = inputTextField.getText();
@@ -422,6 +455,19 @@ public class Computer
 							cpu.setCardReaderInput(ss);
 						break;
 					}
+					case "Expand":
+					{
+						memory.expand();
+						for (int i = 2048; i < 4096; i++)
+						{
+							Vector<String> v = new Vector<String>();
+							v.add(Integer.toString(i));
+							memoryTableModel.addRow(v);
+						}
+						expandButton.setVisible(false);
+						memoryLabel.setText("Memory (4096 Words)");
+						break;
+					}
 				}
 				refresh();
 			}
@@ -433,6 +479,7 @@ public class Computer
 		executeButton.addActionListener(buttonListener);
 		keyboardButton.addActionListener(buttonListener);
 		cardReaderButton.addActionListener(buttonListener);
+		expandButton.addActionListener(buttonListener);
 	}
 
 	// refresh the display value

@@ -214,5 +214,27 @@ public class Memory
 		store(0, (char) 7); // PC for a Trap
 		store(1, (char) 6); // PC for a machine fault
 		store(6, (char) 4); // HLT for machine fault
+		// Trap instruction entries
+		// We use just 8 entries and all jump to same instructions
+		store(7, (char) 0b0010110000001111); // JMA jump to 15
+		store(8, (char) 0b0010110000001111); // JMA jump to 15
+		store(9, (char) 0b0010110000001111); // JMA jump to 15
+		store(10, (char) 0b0010110000001111); // JMA jump to 15
+		store(11, (char) 0b0010110000001111); // JMA jump to 15
+		store(12, (char) 0b0010110000001111); // JMA jump to 15
+		store(13, (char) 0b0010110000001111); // JMA jump to 15
+		store(14, (char) 0b0010110000001111); // JMA jump to 15
+		// Trap instructions
+		store(15, (char) 0b0000110000010101); // LDA 0, 0, 21
+		store(16, (char) 0b0110010011000010); // SRC 0, 2, 1, 1
+		store(17, (char) 0b1100100000000001); // OUT 0, 1 -- 'T'
+		store(18, (char) 0b0001110000000010); // SIR 0, 2
+		store(19, (char) 0b1100100000000001); // OUT 0, 1 -- 'R'
+		store(20, (char) 0b0001110000010001); // SIR 0, 17
+		store(21, (char) 0b1100100000000001); // OUT 0, 1 -- 'A'
+		store(22, (char) 0b0001100000001111); // AIR 0, 1111
+		store(23, (char) 0b1100100000000001); // OUT 0, 1 -- 'P'
+		store(24, (char) 0b0000011100000010); // LDR 3, 0, 2
+		store(25, (char) 0b0011010000000000); // RFS
 	}
 }
