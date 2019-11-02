@@ -58,6 +58,10 @@ public class Computer
 	private JScrollPane logScrollPane;
 	private Label logLabel;
 
+	private JTextPane printerTextPane;
+	private JScrollPane printerScrollPane;
+	private Label printerLabel;
+
 	private JTextArea cardReaderTextArea;
 	private JScrollPane cardReaderScrollPane;
 	private JButton cardReaderButton;
@@ -79,6 +83,7 @@ public class Computer
 		initListener(); // initiate all listeners for components
 		memory.setTextPane(logTextPane); // link memory and log console
 		cpu.setTextPane(logTextPane); // link CPU and log console
+		cpu.setPrinterTextPane(printerTextPane); // link CPU and printer console
 	}
 
 	// initiate components
@@ -186,15 +191,26 @@ public class Computer
 				}
 			}
 		});
+
 		// log console
 		logTextPane = new JTextPane();
 		logTextPane.setEditable(false);
 
 		logScrollPane = new JScrollPane(logTextPane);
-		logScrollPane.setBounds(465, 30, 333, 550);
+		logScrollPane.setBounds(465, 30, 333, 410);
 
 		logLabel = new Label("Log");
 		logLabel.setBounds(466, 0, 100, 30);
+
+		// printer
+		printerTextPane = new JTextPane();
+		printerTextPane.setEditable(false);
+
+		printerScrollPane = new JScrollPane(printerTextPane);
+		printerScrollPane.setBounds(466, 470, 333, 110);
+
+		printerLabel = new Label("Printer");
+		printerLabel.setBounds(466, 440, 333, 30);
 
 		// card reader
 		cardReaderTextArea = new JTextArea();
@@ -259,6 +275,9 @@ public class Computer
 
 		window.add(logLabel);
 		window.add(logScrollPane);
+
+		window.add(printerLabel);
+		window.add(printerScrollPane);
 
 		window.add(buttonPanel);
 		window.add(inputTextField);

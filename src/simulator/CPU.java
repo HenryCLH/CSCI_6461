@@ -11,7 +11,8 @@ import javax.swing.text.StyleConstants;
 public class CPU extends Thread
 {
 	private Memory memory;	// reference of memory
-	private JTextPane textPane;	// reference of log console in UI
+	private JTextPane printerTextPane; //reference of printer console in UI
+	private JTextPane logTextPane;	// reference of log console in UI
 	// Registers in CPU
 	private char[] Reg;	// General Purpose Register (GPR) 16 bits
 	private char[] XReg;	// Index Register (XR) 16 bits
@@ -22,7 +23,7 @@ public class CPU extends Thread
 	private char MBR;	// Memory Buffer Register 16 bits
 	private char MFR;	// Machine Fault Register 4 bits
 
-	private int reservedMemoryBounds = 24; // memory address bounds of the reserved part
+	private int reservedMemoryBounds = 27; // memory address bounds of the reserved part
 	private int trapCodeRange = 8; // the size of trap entries table
 
 	private char keyboardInput;	// number from the UI input console
@@ -522,7 +523,7 @@ public class CPU extends Thread
 			{
 				printLog("OUT");
 				if (devID == 1)
-					printLog("Printer Output: " + Reg[reg]);
+					print("" + Reg[reg]);
 				PC++;
 				break;
 			}
@@ -711,27 +712,42 @@ public class CPU extends Thread
 		inputFlag = 0;
 	}
 
+	//set printer console reference
+	public void setPrinterTextPane(JTextPane printer)
+	{ printerTextPane = printer; }
+
+	// print to printer
+	public void print(String s)
+	{
+		Document doc = printerTextPane.getDocument();
+		SimpleAttributeSet attrSet = new SimpleAttributeSet();
+		StyleConstants.setForeground(attrSet, Color.BLUE);
+		try
+		{
+			doc.insertString(doc.getLength(), s, attrSet);
+		} catch (BadLocationException e)
+		{
+			System.out.println("BadLocationException: " + e);
+		}
+		logTextPane.setCaretPosition(doc.getLength());
+	}
+
 	// set the log console reference
 	public void setTextPane(JTextPane log)
-	{ textPane = log; }
+	{ logTextPane = log; }
 
 	// print log
 
 	// print log of CPU
 	public void printLog(String s)
 	{
-		Document doc = textPane.getDocument();
+		Document doc = logTextPane.getDocument();
 		s = "\n" + s;
 		SimpleAttributeSet attrSet = null;
 		if (s.contains("Error") || s.contains("Fault"))
 		{
 			attrSet = new SimpleAttributeSet();
 			StyleConstants.setForeground(attrSet, Color.RED);
-		}
-		else if (s.contains("Printer Output"))
-		{
-			attrSet = new SimpleAttributeSet();
-			StyleConstants.setForeground(attrSet, Color.BLUE);
 		}
 		try
 		{
@@ -740,6 +756,6 @@ public class CPU extends Thread
 		{
 			System.out.println("BadLocationException: " + e);
 		}
-		textPane.setCaretPosition(doc.getLength());
+		logTextPane.setCaretPosition(doc.getLength());
 	}
 }

@@ -11,7 +11,7 @@ import javax.swing.text.StyleConstants;
 
 public class Memory
 {
-	private JTextPane textPane;	// reference of log console on UI
+	private JTextPane logTextPane;	// reference of log console on UI
 
 	private char[] memory;		// 2048 words each is 16 bits
 	private boolean expandFlag;	// flag mark if the memory has been expanded
@@ -136,15 +136,14 @@ public class Memory
 
 	// set the log console reference
 	public void setTextPane(JTextPane log)
-	{ textPane = log; }
+	{ logTextPane = log; }
 
 	// print error message of memory
 	public void printError(String s)
 	{
-		Document doc = textPane.getDocument();
+		Document doc = logTextPane.getDocument();
 		s = "\n" + s;
-		SimpleAttributeSet attrSet = null;
-		attrSet = new SimpleAttributeSet();
+		SimpleAttributeSet attrSet = new SimpleAttributeSet();
 		StyleConstants.setForeground(attrSet, Color.RED);
 		try
 		{
@@ -153,7 +152,7 @@ public class Memory
 		{
 			System.out.println("BadLocationException: " + e);
 		}
-		textPane.setCaretPosition(doc.getLength());
+		logTextPane.setCaretPosition(doc.getLength());
 	}
 
 	// load Test Program 1 into memory
@@ -234,7 +233,9 @@ public class Memory
 		store(21, (char) 0b1100100000000001); // OUT 0, 1 -- 'A'
 		store(22, (char) 0b0001100000001111); // AIR 0, 1111
 		store(23, (char) 0b1100100000000001); // OUT 0, 1 -- 'P'
-		store(24, (char) 0b0000011100000010); // LDR 3, 0, 2
-		store(25, (char) 0b0011010000000000); // RFS
+		store(24, (char) 0b0000110000001010); // LDA 0, 0, 10
+		store(25, (char) 0b1100100000000001); // OUT 0, 1 -- '\n'
+		store(26, (char) 0b0000011100000010); // LDR 3, 0, 2
+		store(27, (char) 0b0011010000000000); // RFS
 	}
 }
