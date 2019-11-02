@@ -1,6 +1,7 @@
 package simulator;
 
 import java.awt.Color;
+import java.util.Vector;
 
 import javax.swing.JTextPane;
 import javax.swing.text.BadLocationException;
@@ -26,7 +27,7 @@ public class CPU extends Thread
 	private int reservedMemoryBounds = 27; // memory address bounds of the reserved part
 	private int trapCodeRange = 8; // the size of trap entries table
 
-	private char keyboardInput;	// number from the UI input console
+	private Vector<Character> keyboardInput;	// number from the UI input console
 	private int inputFlag;	// mark if the CPU is waiting for user to input a number
 
 	// constructor
@@ -39,19 +40,20 @@ public class CPU extends Thread
 		PC = IR = CC = 0;
 		MAR = MBR = MFR = 0;
 		// initiate input flag, 0 means not waiting, 1 means has an input, -1 means waiting
+		keyboardInput = new Vector<Character>();
 		inputFlag = 0;
 	}
 
 	// run the CPU until PC go to the HLT address
 	public void run()
 	{
-		while (PC != 4)
+		do
 		{
 			stepRun();
 			// if need a input from user, stop and wait
 			if (inputFlag == -1)
 				break;
-		}
+		} while (IR != 0);
 	}
 
 	// run step by step
@@ -85,7 +87,8 @@ public class CPU extends Thread
 		EA += Addr;
 		if (I == 1)
 		{
-			if (load(EA) == Integer.MIN_VALUE)
+			int tmp = load(EA);
+			if (tmp == Integer.MIN_VALUE)
 				return;
 			else
 				EA = MBR;
@@ -95,13 +98,13 @@ public class CPU extends Thread
 		{
 			case 0: // HLT
 			{
-				PC = 4;
-				printLog("HLT: PC = 4");
+				printLog("HLT: PC = " + (int) PC);
 				break;
 			}
 			case 01: // LDR
 			{
-				if (load(EA) == Integer.MIN_VALUE)
+				int tmp = load(EA);
+				if (tmp == Integer.MIN_VALUE)
 					return;
 				else
 				{
@@ -137,13 +140,14 @@ public class CPU extends Thread
 			}
 			case 04: // AMR
 			{
-				if (load(EA) == Integer.MIN_VALUE)
+				int tmp = load(EA);
+				if (tmp == Integer.MIN_VALUE)
 					return;
 				else
 				{
 					short r = (short) Reg[reg];
 					short m = (short) MBR;
-					int tmp = r + m;
+					tmp = r + m;
 					String s = "";
 					if (tmp > Short.MAX_VALUE)
 					{
@@ -165,13 +169,14 @@ public class CPU extends Thread
 			}
 			case 05: // SMR
 			{
-				if (load(EA) == Integer.MIN_VALUE)
+				int tmp = load(EA);
+				if (tmp == Integer.MIN_VALUE)
 					return;
 				else
 				{
 					short r = (short) Reg[reg];
 					short m = (short) MBR;
-					int tmp = r - m;
+					tmp = r - m;
 					String s = "";
 					if (tmp > Short.MAX_VALUE)
 					{
@@ -475,7 +480,8 @@ public class CPU extends Thread
 			}
 			case 041: // LDX
 			{
-				if (load(EA) == Integer.MIN_VALUE)
+				int tmp = load(EA);
+				if (tmp == Integer.MIN_VALUE)
 					return;
 				else
 				{
@@ -504,10 +510,11 @@ public class CPU extends Thread
 			}
 			case 061: // IN
 			{
-				if (inputFlag == 1)
+				if (!keyboardInput.isEmpty())
 				{
 					if (devID == 0)
-						Reg[reg] = keyboardInput;
+						Reg[reg] = keyboardInput.get(0);
+					keyboardInput.remove(0);
 					PC++;
 					printLog("IN: Reg[" + reg + "] = " + (int) Reg[reg]);
 					inputFlag = 0;
@@ -524,6 +531,8 @@ public class CPU extends Thread
 				printLog("OUT");
 				if (devID == 1)
 					print("" + Reg[reg]);
+				else if (devID == 2)
+					print("" + (int) Reg[reg]);
 				PC++;
 				break;
 			}
@@ -573,8 +582,6 @@ public class CPU extends Thread
 	{ IR = ir; }
 
 	// for outside to set register value
-
-	// for out side to set registers value
 	public void setRegister(int index, char value)
 	{
 		String s = "";
@@ -674,21 +681,17 @@ public class CPU extends Thread
 	}
 
 	// set the input from keyboard
-	public void setKeyboardInput(int key)
+	public void setKeyboardInput(Vector<Character> key)
 	{
-		if (key <= 32767 && key >= -32768)
+		if (inputFlag == -1)
 		{
-			keyboardInput = (char) key;
+			keyboardInput = key;
 			inputFlag = 1;
 			run();
 		}
-		else
-			printLog("Input Value Out of Range! Please Input Again");
 	}
 
 	// set the input from card reader
-
-	// set when get input from card reader
 	public void setCardReaderInput(String[] ss)
 	{
 		for (int i = 0; i < ss.length; i++)
@@ -701,14 +704,13 @@ public class CPU extends Thread
 	}
 
 	// clear the CPU, reset all values to initial state
-
-	// clear the CPU, reset all values to initial state
 	public void clear()
 	{
 		Reg = new char[] { 0, 0, 0, 0 };
 		XReg = new char[] { 0, 0, 0 };
 		PC = IR = CC = 0;
 		MAR = MBR = MFR = 0;
+		keyboardInput = new Vector<Character>();
 		inputFlag = 0;
 	}
 
@@ -735,8 +737,6 @@ public class CPU extends Thread
 	// set the log console reference
 	public void setTextPane(JTextPane log)
 	{ logTextPane = log; }
-
-	// print log
 
 	// print log of CPU
 	public void printLog(String s)

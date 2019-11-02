@@ -250,23 +250,6 @@ public class Computer
 		// keyboard input field
 		keyboardTextField = new JTextField();
 		keyboardTextField.setBounds(690, 590, 100, 30);
-		keyboardTextField.setDocument(new PlainDocument()
-		{
-			public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException
-			{
-				if (str != null)
-				{
-					String s = "";
-					for (int i = 0; i < str.length(); i++)
-					{
-						char ch = str.charAt(i);
-						if (ch >= '0' && ch <= '9')
-							s += ch;
-					}
-					super.insertString(offset, s, attr);
-				}
-			}
-		});
 
 		// add all components into main frame
 		window.add(registerLabel);
@@ -408,7 +391,25 @@ public class Computer
 			{
 				// use key Enter to input value
 				if (e.getKeyChar() == '\n')
-					cpu.setKeyboardInput(Integer.parseInt(keyboardTextField.getText()));
+				{
+					String s = keyboardTextField.getText();
+					Vector<Character> in = new Vector<Character>();
+					if (s.charAt(0) >= '0' && s.charAt(0) <= '9')
+					{
+						int tmp = Integer.parseInt(keyboardTextField.getText());
+						in.add((char) tmp);
+					}
+					else
+					{
+						for (int i = 0; i < s.length(); i++)
+						{
+							in.add(s.charAt(i));
+						}
+						in.add((char) 4);
+					}
+					cpu.setKeyboardInput(in);
+					keyboardTextField.setText("");
+				}
 			}
 		});
 
@@ -428,6 +429,7 @@ public class Computer
 						memoryLabel.setText("Memory (2048 Words)");
 						memory.loadROM();
 						cpu.clear();
+						cpu.setRegister(7, (char) 6);
 						break;
 					}
 					case "Run":
@@ -447,7 +449,7 @@ public class Computer
 					{
 						memory.load2();
 						cpu.clear();
-						cpu.setRegister(7, (char) 6);
+						cpu.setRegister(7, (char) 1000);
 						break;
 					}
 					case "Execute":
@@ -462,9 +464,6 @@ public class Computer
 						}
 						break;
 					}
-					case "Keyboard":
-						cpu.setKeyboardInput(Integer.parseInt(keyboardTextField.getText()));
-						break;
 					case "Read":
 					{
 						String s = cardReaderTextArea.getText();
@@ -480,7 +479,10 @@ public class Computer
 							}
 						}
 						if (tmpFlag == 0)
+						{
 							cpu.setCardReaderInput(ss);
+							cardReaderTextArea.setText("");
+						}
 						break;
 					}
 					case "Expand":
