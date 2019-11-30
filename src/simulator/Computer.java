@@ -93,13 +93,14 @@ public class Computer
 		// main frame
 		window = new JFrame("Computer");
 		window.setLayout(null);
-		window.setSize(800, 650);
+		window.setSize(800, 710);
 		window.setLocationRelativeTo(null);
 		window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
 		// registers
 		String[] registerColumnName = { "Register", "Binary Value" };
-		String[][] registerData = { { "R0" }, { "R1" }, { "R2" }, { "R3" }, { "XR1" }, { "XR2" }, { "XR3" }, { "PC" }, { "IR" }, { "CC" }, { "MAR" }, { "MBR" }, { "MFR" } };
+		String[][] registerData = { { "R0" }, { "R1" }, { "R2" }, { "R3" }, { "XR1" }, { "XR2" }, { "XR3" }, { "PC" }, { "IR" }, { "CC" }, { "MAR" }, { "MBR" }, { "MFR" },
+				{ "FR0" }, { "FR1" } };
 		registerTable = new JTable(new DefaultTableModel(registerData, registerColumnName)
 		{
 			@Override
@@ -116,7 +117,7 @@ public class Computer
 		registerTable.getColumnModel().getColumn(0).setMaxWidth(50);
 
 		registerScrollPane = new JScrollPane(registerTable);
-		registerScrollPane.setBounds(2, 30, 220, 410);
+		registerScrollPane.setBounds(2, 30, 220, 470);
 
 		registerLabel = new Label("Register");
 		registerLabel.setBounds(3, 0, 100, 30);
@@ -145,7 +146,7 @@ public class Computer
 		memoryTable.getColumnModel().getColumn(0).setMaxWidth(40);
 
 		memoryScrollPane = new JScrollPane(memoryTable);
-		memoryScrollPane.setBounds(235, 30, 220, 550);
+		memoryScrollPane.setBounds(235, 30, 220, 610);
 		// memory expand button
 		expandButton = new JButton("Expand");
 		expandButton.setBounds(380, 0, 80, 30);
@@ -156,7 +157,7 @@ public class Computer
 		// buttons
 		buttonPanel = new JPanel();
 		buttonPanel.setLayout(new GridLayout(1, 5));
-		buttonPanel.setBounds(2, 590, 470, 30);
+		buttonPanel.setBounds(2, 650, 470, 30);
 
 		IPL = new JButton("IPL");
 		runButton = new JButton("Run");
@@ -174,7 +175,7 @@ public class Computer
 
 		// input field for instructions
 		inputTextField = new JTextField();
-		inputTextField.setBounds(470, 590, 150, 30);
+		inputTextField.setBounds(470, 650, 150, 30);
 		inputTextField.setDocument(new PlainDocument()
 		{
 			public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException
@@ -210,7 +211,7 @@ public class Computer
 		printerTextPane.setEditable(false);
 
 		printerScrollPane = new JScrollPane(printerTextPane);
-		printerScrollPane.setBounds(466, 470, 333, 110);
+		printerScrollPane.setBounds(466, 470, 333, 170);
 
 		printerLabel = new Label("Printer");
 		printerLabel.setBounds(466, 440, 333, 30);
@@ -236,20 +237,20 @@ public class Computer
 		});
 
 		cardReaderScrollPane = new JScrollPane(cardReaderTextArea);
-		cardReaderScrollPane.setBounds(2, 470, 220, 110);
+		cardReaderScrollPane.setBounds(2, 530, 220, 110);
 		// card reader input button
 		cardReaderButton = new JButton("Read");
-		cardReaderButton.setBounds(112, 440, 90, 30);
+		cardReaderButton.setBounds(112, 500, 90, 30);
 
 		cardReaderLabel = new Label("Card Reader");
-		cardReaderLabel.setBounds(2, 440, 110, 30);
+		cardReaderLabel.setBounds(2, 500, 110, 30);
 
 		// keyboard label
 		keyboardLabel = new Label("Keyboard");
-		keyboardLabel.setBounds(625, 590, 65, 30);
+		keyboardLabel.setBounds(625, 650, 65, 30);
 		// keyboard input field
 		keyboardTextField = new JTextField();
-		keyboardTextField.setBounds(690, 590, 100, 30);
+		keyboardTextField.setBounds(690, 650, 100, 30);
 
 		// add all components into main frame
 		window.add(registerLabel);

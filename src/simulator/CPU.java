@@ -23,6 +23,7 @@ public class CPU extends Thread
 	private char MAR;	// Memory Address Register 16 bits
 	private char MBR;	// Memory Buffer Register 16 bits
 	private char MFR;	// Machine Fault Register 4 bits
+	private char[] FR;	// Float Point Registers 16 bits
 
 	private int reservedMemoryBounds = 27; // memory address bounds of the reserved part
 	private int trapCodeRange = 8; // the size of trap entries table
@@ -37,6 +38,7 @@ public class CPU extends Thread
 		// initiate registers with 0
 		Reg = new char[] { 0, 0, 0, 0 };
 		XReg = new char[] { 0, 0, 0 };
+		FR = new char[] { 0, 0 };
 		PC = IR = CC = 0;
 		MAR = MBR = MFR = 0;
 		// initiate input flag, 0 means not waiting, 1 means has an input, -1 means waiting
@@ -467,6 +469,170 @@ public class CPU extends Thread
 				printLog("RRC: Reg[" + reg + "] = " + (int) Reg[reg]);
 				break;
 			}
+			case 033: // FADD
+			{
+				int tmp = load(EA);
+				if (tmp == Integer.MIN_VALUE)
+					return;
+				else
+				{
+					char fr1 = FR[reg];
+					char fr2 = MBR;
+					int e1 = (fr1 & 0b0111111100000000) >> 8;
+					int f1 = (fr1 & 0b1000000000000000) == 0 ? 1 : -1;
+					int m1 = (fr1 & 0b0000000011111111) * f1;
+					int e2 = (fr2 & 0b0111111100000000) >> 8;
+					int f2 = (fr2 & 0b1000000000000000) == 0 ? 1 : -1;
+					int m2 = (fr2 & 0b0000000011111111) * f2;
+					if (e1 > e2)
+					{
+						int e = e1 - e2;
+						m2 = m2 >> e;
+						int m = m1 + m2;
+						int fr = (m > 0) ? 0 : 1;
+						if (m < 0)
+							m *= -1;
+						fr = fr << 15;
+						fr += e1 << 8;
+						fr += m;
+						FR[reg] = (char) fr;
+					}
+					else
+					{
+						int e = e2 - e1;
+						m1 = m1 >> e;
+						int m = m1 + m2;
+						int fr = (m > 0) ? 0 : 1;
+						if (m < 0)
+							m *= -1;
+						fr = fr << 15;
+						fr += e2 << 8;
+						fr += m;
+						FR[reg] = (char) fr;
+					}
+					PC++;
+					printLog("FADD: FR[" + reg + "] = " + (int) FR[reg]);
+				}
+				break;
+			}
+			case 034: // FSUB
+			{
+				int tmp = load(EA);
+				if (tmp == Integer.MIN_VALUE)
+					return;
+				else
+				{
+					char fr1 = FR[reg];
+					char fr2 = MBR;
+					int e1 = (fr1 & 0b0111111100000000) >> 8;
+					int f1 = (fr1 & 0b1000000000000000) == 0 ? 1 : -1;
+					int m1 = (fr1 & 0b0000000011111111) * f1;
+					int e2 = (fr2 & 0b0111111100000000) >> 8;
+					int f2 = (fr2 & 0b1000000000000000) == 0 ? 1 : -1;
+					int m2 = (fr2 & 0b0000000011111111) * f2;
+					if (e1 > e2)
+					{
+						int e = e1 - e2;
+						m2 = m2 >> e;
+						int m = m1 - m2;
+						int fr = (m > 0) ? 0 : 1;
+						if (m < 0)
+							m *= -1;
+						fr = fr << 15;
+						fr += e1 << 8;
+						fr += m;
+						FR[reg] = (char) fr;
+					}
+					else
+					{
+						int e = e2 - e1;
+						m1 = m1 >> e;
+						int m = m1 - m2;
+						int fr = (m > 0) ? 0 : 1;
+						if (m < 0)
+							m *= -1;
+						fr = fr << 15;
+						fr += e2 << 8;
+						fr += m;
+						FR[reg] = (char) fr;
+					}
+					PC++;
+					printLog("FSUB: FR[" + reg + "] = " + (int) FR[reg]);
+				}
+				break;
+			}
+			case 035: // VADD
+			{
+				int va1, va2;
+				if (xreg != 0)
+					EA = XReg[xreg - 1] + Addr;
+				else
+					EA = Addr;
+				if (I == 1)
+				{
+					load(EA);
+					load(MBR);
+					va1 = MBR;
+					load(EA + 1);
+					load(MBR);
+					va2 = MBR;
+				}
+				else
+				{
+					load(EA);
+					va1 = MBR;
+					load(EA + 1);
+					va2 = MBR;
+				}
+				for (int i = 0; i < FR[reg]; i++)
+				{
+					load(va1 + i);
+					int tmp1 = MBR;
+					load(va2 + i);
+					int tmp2 = MBR;
+					tmp1 += tmp2;
+					store(va1 + 1, (char) tmp1);
+				}
+				PC++;
+				printLog("VADD");
+				break;
+			}
+			case 052: // VSUB Because 036 has been used by TRAP, so we use 052 for VSUB
+			{
+				int va1, va2;
+				if (xreg != 0)
+					EA = XReg[xreg - 1] + Addr;
+				else
+					EA = Addr;
+				if (I == 1)
+				{
+					load(EA);
+					load(MBR);
+					va1 = MBR;
+					load(EA + 1);
+					load(MBR);
+					va2 = MBR;
+				}
+				else
+				{
+					load(EA);
+					va1 = MBR;
+					load(EA + 1);
+					va2 = MBR;
+				}
+				for (int i = 0; i < FR[reg]; i++)
+				{
+					load(va1 + i);
+					int tmp1 = MBR;
+					load(va2 + i);
+					int tmp2 = MBR;
+					tmp1 -= tmp2;
+					store(va1 + 1, (char) tmp1);
+				}
+				PC++;
+				printLog("VSUB");
+				break;
+			}
 			case 036: // TRAP
 			{
 				store(2, (char) (PC + 1));
@@ -476,6 +642,35 @@ public class CPU extends Thread
 					handleMachineFault(1);
 				else
 					PC = (char) (load(PC) + code);
+				break;
+			}
+			case 037: // CNVRT
+			{
+				int f = Reg[reg];
+				load(EA);
+				if (f == 0)
+				{
+					int tmp = MBR;
+					int flag = (tmp & 0b1000000000000000) == 0 ? 1 : -1;
+					int e = tmp & 0b0111111100000000 >> 8;
+					int m = (tmp & 0b000000001111111) * flag;
+					tmp = m * (int) Math.pow(2, e);
+					Reg[reg] = (char) tmp;
+					PC++;
+					printLog("CNVRT: Reg[" + reg + "] = " + (int) Reg[reg]);
+				}
+				else
+				{
+					int flag = (MBR & 0b1000000000000000) == 0 ? 0 : 1;
+					flag = flag << 15;
+					int tmp = MBR & 0b0111111111111111;
+					int e = 7;
+					e = e << 8;
+					int m = tmp >> 7;
+					FR[reg] = (char) (flag + e + m);
+					PC++;
+					printLog("CNVRT: FR[" + reg + "] = " + (int) FR[reg]);
+				}
 				break;
 			}
 			case 041: // LDX
@@ -507,6 +702,36 @@ public class CPU extends Thread
 					}
 				}
 				break;
+			}
+			case 050: // LDFR
+			{
+				int tmp = load(EA);
+				if (tmp == Integer.MIN_VALUE)
+					return;
+				else
+				{
+					FR[reg] = MBR;
+					PC++;
+					printLog("LDFR: FR[" + reg + "] = " + (int) FR[reg]);
+				}
+				break;
+			}
+			case 051: // STFR
+			{
+				MAR = (char) EA;
+				if (MAR <= reservedMemoryBounds)
+					handleMachineFault(0);
+				else
+				{
+					if (store(EA, FR[reg]) == Integer.MIN_VALUE)
+						return;
+					else
+					{
+						PC++;
+						printLog("STFR: Memory[" + EA + "] = " + (int) FR[reg]);
+					}
+					break;
+				}
 			}
 			case 061: // IN
 			{
@@ -639,6 +864,14 @@ public class CPU extends Thread
 				MFR = value;
 				s += "MFR";
 				break;
+			case 13:
+				FR[0] = value;
+				s += "FR[0]";
+				break;
+			case 14:
+				FR[1] = value;
+				s += "FR[1]";
+				break;
 		}
 		printLog("Set " + s + " = " + (int) value);
 	}
@@ -674,6 +907,10 @@ public class CPU extends Thread
 				return MBR;
 			case 12:
 				return MFR;
+			case 13:
+				return FR[0];
+			case 14:
+				return FR[1];
 			default: // if index is invalid, return an invalid value
 				return Integer.MIN_VALUE;
 		}
@@ -708,6 +945,7 @@ public class CPU extends Thread
 	{
 		Reg = new char[] { 0, 0, 0, 0 };
 		XReg = new char[] { 0, 0, 0 };
+		FR = new char[] { 0, 0 };
 		PC = IR = CC = 0;
 		MAR = MBR = MFR = 0;
 		keyboardInput = new Vector<Character>();
