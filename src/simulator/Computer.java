@@ -41,19 +41,9 @@ public class Computer
 
 	private JTable memoryTable;
 	private JScrollPane memoryScrollPane;
-	private JButton expandButton;
 	private Label memoryLabel;
+	private JButton expandButton;
 	private DefaultTableModel memoryTableModel;
-
-	private JPanel buttonPanel;
-	private JButton IPL;
-	private JButton runButton;
-	private JButton stepButton;
-	private JButton loadButton1;
-	private JButton loadButton2;
-	private JButton executeButton;
-
-	private JTextField inputTextField;
 
 	private JTextPane logTextPane;
 	private JScrollPane logScrollPane;
@@ -67,6 +57,16 @@ public class Computer
 	private JScrollPane cardReaderScrollPane;
 	private JButton cardReaderButton;
 	private Label cardReaderLabel;
+
+	private JPanel buttonPanel;
+	private JButton IPL;
+	private JButton runButton;
+	private JButton stepButton;
+	private JButton loadButton1;
+	private JButton loadButton2;
+
+	private Label executeLabel;
+	private JTextField inputTextField;
 
 	private Label keyboardLabel;
 	private JTextField keyboardTextField;
@@ -99,8 +99,7 @@ public class Computer
 
 		// registers
 		String[] registerColumnName = { "Register", "Binary Value" };
-		String[][] registerData = { { "R0" }, { "R1" }, { "R2" }, { "R3" }, { "XR1" }, { "XR2" }, { "XR3" }, { "PC" }, { "IR" }, { "CC" }, { "MAR" }, { "MBR" }, { "MFR" },
-				{ "FR0" }, { "FR1" } };
+		String[][] registerData = { { "R0" }, { "R1" }, { "R2" }, { "R3" }, { "XR1" }, { "XR2" }, { "XR3" }, { "PC" }, { "IR" }, { "CC" }, { "MAR" }, { "MBR" }, { "MFR" } };
 		registerTable = new JTable(new DefaultTableModel(registerData, registerColumnName)
 		{
 			@Override
@@ -117,7 +116,7 @@ public class Computer
 		registerTable.getColumnModel().getColumn(0).setMaxWidth(50);
 
 		registerScrollPane = new JScrollPane(registerTable);
-		registerScrollPane.setBounds(2, 30, 220, 470);
+		registerScrollPane.setBounds(2, 30, 220, 410);
 
 		registerLabel = new Label("Register");
 		registerLabel.setBounds(3, 0, 100, 30);
@@ -153,48 +152,6 @@ public class Computer
 
 		memoryLabel = new Label("Memory");
 		memoryLabel.setBounds(236, 0, 140, 30);
-
-		// buttons
-		buttonPanel = new JPanel();
-		buttonPanel.setLayout(new GridLayout(1, 5));
-		buttonPanel.setBounds(2, 650, 470, 30);
-
-		IPL = new JButton("IPL");
-		runButton = new JButton("Run");
-		stepButton = new JButton("Step");
-		loadButton1 = new JButton("Load1");
-		loadButton2 = new JButton("Load2");
-		executeButton = new JButton("Execute");
-
-		buttonPanel.add(IPL);
-		buttonPanel.add(runButton);
-		buttonPanel.add(stepButton);
-		buttonPanel.add(loadButton1);
-		buttonPanel.add(loadButton2);
-		buttonPanel.add(executeButton);
-
-		// input field for instructions
-		inputTextField = new JTextField();
-		inputTextField.setBounds(470, 650, 150, 30);
-		inputTextField.setDocument(new PlainDocument()
-		{
-			public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException
-			{
-				if (str != null && getLength() < 16)
-				{
-					String s = "";
-					for (int i = 0; i < str.length(); i++)
-					{
-						char ch = str.charAt(i);
-						if (ch == '0' || ch == '1')
-							s += ch;
-					}
-					if ((getLength() + s.length()) > 16)
-						s = s.substring(0, 16 - getLength());
-					super.insertString(offset, s, attr);
-				}
-			}
-		});
 
 		// log console
 		logTextPane = new JTextPane();
@@ -237,17 +194,60 @@ public class Computer
 		});
 
 		cardReaderScrollPane = new JScrollPane(cardReaderTextArea);
-		cardReaderScrollPane.setBounds(2, 530, 220, 110);
+		cardReaderScrollPane.setBounds(2, 470, 220, 170);
 		// card reader input button
 		cardReaderButton = new JButton("Read");
-		cardReaderButton.setBounds(112, 500, 90, 30);
+		cardReaderButton.setBounds(137, 440, 90, 30);
 
 		cardReaderLabel = new Label("Card Reader");
-		cardReaderLabel.setBounds(2, 500, 110, 30);
+		cardReaderLabel.setBounds(2, 440, 110, 30);
+
+		// buttons
+		buttonPanel = new JPanel();
+		buttonPanel.setLayout(new GridLayout(1, 5));
+		buttonPanel.setBounds(2, 650, 400, 30);
+
+		IPL = new JButton("IPL");
+		runButton = new JButton("Run");
+		stepButton = new JButton("Step");
+		loadButton1 = new JButton("Load1");
+		loadButton2 = new JButton("Load2");
+
+		buttonPanel.add(IPL);
+		buttonPanel.add(runButton);
+		buttonPanel.add(stepButton);
+		buttonPanel.add(loadButton1);
+		buttonPanel.add(loadButton2);
+
+		// execute instruction label
+		executeLabel = new Label("Execute");
+		executeLabel.setBounds(415, 650, 55, 30);
+		// input field for single instruction
+		inputTextField = new JTextField();
+		inputTextField.setBounds(470, 650, 150, 30);
+		inputTextField.setDocument(new PlainDocument()
+		{
+			public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException
+			{
+				if (str != null && getLength() < 16)
+				{
+					String s = "";
+					for (int i = 0; i < str.length(); i++)
+					{
+						char ch = str.charAt(i);
+						if (ch == '0' || ch == '1')
+							s += ch;
+					}
+					if ((getLength() + s.length()) > 16)
+						s = s.substring(0, 16 - getLength());
+					super.insertString(offset, s, attr);
+				}
+			}
+		});
 
 		// keyboard label
 		keyboardLabel = new Label("Keyboard");
-		keyboardLabel.setBounds(625, 650, 65, 30);
+		keyboardLabel.setBounds(630, 650, 60, 30);
 		// keyboard input field
 		keyboardTextField = new JTextField();
 		keyboardTextField.setBounds(690, 650, 100, 30);
@@ -266,12 +266,14 @@ public class Computer
 		window.add(printerLabel);
 		window.add(printerScrollPane);
 
-		window.add(buttonPanel);
-		window.add(inputTextField);
-
 		window.add(cardReaderLabel);
 		window.add(cardReaderButton);
 		window.add(cardReaderScrollPane);
+
+		window.add(buttonPanel);
+
+		window.add(executeLabel);
+		window.add(inputTextField);
 
 		window.add(keyboardLabel);
 		window.add(keyboardTextField);
@@ -385,6 +387,34 @@ public class Computer
 			}
 		});
 
+		//input text field listener
+		inputTextField.addKeyListener(new KeyAdapter()
+		{
+			public void keyReleased(KeyEvent e)
+			{
+				// use key Enter to input single instruction
+				if (e.getKeyChar() == '\n')
+				{
+					String s = inputTextField.getText();
+					if (s != null && s.length() > 0)
+					{
+						if (s.length() < 16)
+						{
+							printLog("Execute Failed! Please input 16 bits insturction");
+						}
+						else
+						{
+							int tmp = Integer.parseInt(s, 2);
+							cpu.setIR((char) tmp);
+							printLog("Execute Single Instruction:");
+							cpu.runInstruction();
+						}
+					}
+					inputTextField.setText("");
+				}
+			}
+		});
+
 		// keyboard text field listener
 		keyboardTextField.addKeyListener(new KeyAdapter()
 		{
@@ -394,21 +424,33 @@ public class Computer
 				if (e.getKeyChar() == '\n')
 				{
 					String s = keyboardTextField.getText();
-					Vector<Character> in = new Vector<Character>();
-					if (s.charAt(0) >= '0' && s.charAt(0) <= '9')
+					if (s.length() > 0)
 					{
-						int tmp = Integer.parseInt(keyboardTextField.getText());
-						in.add((char) tmp);
-					}
-					else
-					{
+						Vector<Character> in = new Vector<Character>();
+						boolean flag = true;
 						for (int i = 0; i < s.length(); i++)
 						{
-							in.add(s.charAt(i));
+							if (s.charAt(0) < '0' || s.charAt(0) > '9')
+							{
+								flag = false;
+								break;
+							}
 						}
-						in.add((char) 4);
+						if (flag)
+						{
+							int tmp = Integer.parseInt(keyboardTextField.getText());
+							in.add((char) tmp);
+						}
+						else
+						{
+							for (int i = 0; i < s.length(); i++)
+							{
+								in.add(s.charAt(i));
+							}
+							in.add((char) 4);
+						}
+						cpu.setKeyboardInput(in);
 					}
-					cpu.setKeyboardInput(in);
 					keyboardTextField.setText("");
 				}
 			}
@@ -453,18 +495,6 @@ public class Computer
 						cpu.setRegister(7, (char) 1000);
 						break;
 					}
-					case "Execute":
-					{
-						String s = inputTextField.getText();
-						inputTextField.setText("");
-						if (s != null && s.length() > 0)
-						{
-							int tmp = Integer.parseInt(s, 2);
-							cpu.setIR((char) tmp);
-							cpu.runInstruction();
-						}
-						break;
-					}
 					case "Read":
 					{
 						String s = cardReaderTextArea.getText();
@@ -474,8 +504,9 @@ public class Computer
 						{
 							if (ss[i].length() != 16 && ss[i].length() != 0)
 							{
-								cardReaderTextArea.setText("Read failed! Every line must be 16 bits");
+								printLog("Read Failed! Every line must be 16 bits");
 								tmpFlag = 1;
+								cardReaderTextArea.setText("");
 								break;
 							}
 						}
@@ -508,7 +539,6 @@ public class Computer
 		stepButton.addActionListener(buttonListener);
 		loadButton1.addActionListener(buttonListener);
 		loadButton2.addActionListener(buttonListener);
-		executeButton.addActionListener(buttonListener);
 		cardReaderButton.addActionListener(buttonListener);
 		expandButton.addActionListener(buttonListener);
 	}
